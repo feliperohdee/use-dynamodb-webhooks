@@ -76,7 +76,7 @@ namespace Webhooks {
 		region: string;
 		secretAccessKey: string;
 		tableName: string;
-		ttlInSeconds: number;
+		ttlInSeconds?: number;
 	};
 
 	export type FetchLogsInput = z.input<typeof webhooksFetchLogsInput>;
@@ -108,11 +108,11 @@ const logShape = (log: Webhooks.LogInput): Webhooks.Log => {
 class Webhooks {
 	public static schema = schema;
 
-	public db: Dynamodb<Webhooks.Log>;
+	public db: { logs: Dynamodb<Webhooks.Log> };
 	public ttlInSeconds: number;
 
 	constructor(options: Webhooks.ConstructorOptions) {
-		const db = new Dynamodb<Webhooks.Log>({
+		const logs = new Dynamodb<Webhooks.Log>({
 			accessKeyId: options.accessKeyId,
 			indexes: [
 				{
@@ -132,16 +132,16 @@ class Webhooks {
 
 		if (options.createTable) {
 			(async () => {
-				await db.createTable();
+				await logs.createTable();
 			})();
 		}
 
-		this.db = db;
+		this.db = { logs };
 		this.ttlInSeconds = options.ttlInSeconds ?? 7776000; // 90 days = 90 * 24 * 60 * 60 seconds
 	}
 
 	async clearLogs(namespace: string): Promise<{ count: number }> {
-		return this.db.clear(namespace);
+		return this.db.logs.clear(namespace);
 	}
 
 	createFetchRequest(options: Webhooks.CreateFetchRequestOptions): Webhooks.CreateFetchRequestResponse {
@@ -249,7 +249,7 @@ class Webhooks {
 				queryOptions.filterExpression = concatConditionExpression(queryOptions.filterExpression!, '#status = :status');
 			}
 
-			const res = await this.db.query(queryOptions);
+			const res = await this.db.logs.query(queryOptions);
 
 			return {
 				...res,
@@ -277,7 +277,7 @@ class Webhooks {
 			queryOptions.filterExpression = '#status = :status';
 		}
 
-		const res = await this.db.query(queryOptions);
+		const res = await this.db.logs.query(queryOptions);
 
 		return {
 			...res,
@@ -288,7 +288,7 @@ class Webhooks {
 	async putLog(log: Webhooks.LogInput): Promise<Webhooks.Log> {
 		log = await webhooksLog.parseAsync(log);
 
-		return logShape(await this.db.put(log));
+		return logShape(await this.db.logs.put(log));
 	}
 
 	async trigger(args: Webhooks.TriggerInput, retries: number = 0): Promise<Webhooks.Log> {

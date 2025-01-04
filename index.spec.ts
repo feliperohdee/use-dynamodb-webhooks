@@ -97,14 +97,14 @@ describe('/index', () => {
 		it('should clear logs for a namespace', async () => {
 			await Promise.all(
 				_.map([createTestLog(), createTestLog(), createTestLog()], log => {
-					return webhooks.db.put(log);
+					return webhooks.db.logs.put(log);
 				})
 			);
 
 			const res = await webhooks.clearLogs('spec');
 			expect(res.count).toEqual(3);
 
-			const remaining = await webhooks.db.query({
+			const remaining = await webhooks.db.logs.query({
 				item: { namespace: 'spec' }
 			});
 			expect(remaining.count).toEqual(0);
@@ -239,7 +239,7 @@ describe('/index', () => {
 		});
 
 		beforeEach(() => {
-			vi.spyOn(webhooks.db, 'query');
+			vi.spyOn(webhooks.db.logs, 'query');
 		});
 
 		afterAll(async () => {
@@ -251,7 +251,7 @@ describe('/index', () => {
 				namespace: 'spec'
 			});
 
-			expect(webhooks.db.query).toHaveBeenCalledWith({
+			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
 				attributeNames: {},
 				attributeValues: {},
 				filterExpression: '',
@@ -276,7 +276,7 @@ describe('/index', () => {
 				namespace: 'spec'
 			});
 
-			expect(webhooks.db.query).toHaveBeenCalledWith({
+			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
 				attributeNames: {},
 				attributeValues: {},
 				filterExpression: '',
@@ -300,7 +300,7 @@ describe('/index', () => {
 				startKey: res.lastEvaluatedKey
 			});
 
-			expect(webhooks.db.query).toHaveBeenCalledWith({
+			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
 				attributeNames: {},
 				attributeValues: {},
 				filterExpression: '',
@@ -325,7 +325,7 @@ describe('/index', () => {
 				namespace: 'spec'
 			});
 
-			expect(webhooks.db.query).toHaveBeenCalledWith({
+			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
 				attributeNames: {},
 				attributeValues: {},
 				filterExpression: '',
@@ -351,7 +351,7 @@ describe('/index', () => {
 				to: '2023-01-02T00:00:00Z'
 			});
 
-			expect(webhooks.db.query).toHaveBeenCalledWith({
+			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
 				attributeNames: {
 					'#__createdAt': '__createdAt'
 				},
@@ -381,7 +381,7 @@ describe('/index', () => {
 				status: 'SUCCESS'
 			});
 
-			expect(webhooks.db.query).toHaveBeenCalledWith({
+			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
 				attributeNames: {
 					'#status': 'status'
 				},
@@ -412,7 +412,7 @@ describe('/index', () => {
 				to: '2023-01-02T00:00:00Z'
 			});
 
-			expect(webhooks.db.query).toHaveBeenCalledWith({
+			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
 				attributeNames: {
 					'#__createdAt': '__createdAt',
 					'#status': 'status'
@@ -444,7 +444,7 @@ describe('/index', () => {
 				namespace: 'spec'
 			});
 
-			expect(webhooks.db.query).toHaveBeenCalledWith({
+			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
 				attributeNames: {},
 				attributeValues: {},
 				filterExpression: '',
@@ -469,7 +469,7 @@ describe('/index', () => {
 				namespace: 'spec'
 			});
 
-			expect(webhooks.db.query).toHaveBeenCalledWith({
+			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
 				attributeNames: {},
 				attributeValues: {},
 				filterExpression: '',
@@ -495,7 +495,7 @@ describe('/index', () => {
 				to: '2023-01-02T00:00:00Z'
 			});
 
-			expect(webhooks.db.query).toHaveBeenCalledWith({
+			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
 				attributeNames: {
 					'#__createdAt': '__createdAt'
 				},
@@ -525,7 +525,7 @@ describe('/index', () => {
 				status: 'SUCCESS'
 			});
 
-			expect(webhooks.db.query).toHaveBeenCalledWith({
+			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
 				attributeNames: {
 					'#status': 'status'
 				},
@@ -556,7 +556,7 @@ describe('/index', () => {
 				to: '2023-01-02T00:00:00Z'
 			});
 
-			expect(webhooks.db.query).toHaveBeenCalledWith({
+			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
 				attributeNames: {
 					'#__createdAt': '__createdAt',
 					'#status': 'status'
