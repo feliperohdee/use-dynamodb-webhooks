@@ -28,6 +28,7 @@ const webhooksLog = z.object({
 	response: z.object({
 		body: z.string(),
 		headers: z.record(z.string()),
+		ok: z.boolean(),
 		status: z.number()
 	}),
 	retries: z.object({
@@ -52,8 +53,8 @@ const webhooksFetchLogsInput = z.object({
 });
 
 const webhooksTriggerInput = z.object({
-	body: z.record(z.any()).optional(),
-	headers: z.record(z.string()).optional(),
+	body: z.record(z.any()).nullable().optional(),
+	headers: z.record(z.string()).nullable().optional(),
 	idPrefix: z.string().optional(),
 	maxRetries: z.number().min(0).max(10).default(3),
 	method: webhooksMethod.optional(),
@@ -66,7 +67,7 @@ const schema = {
 	log: webhooksLog,
 	logStatus: webhooksLogStatus,
 	method: webhooksMethod,
-	triggerInput: webhooksTriggerInput,
+	triggerInput: webhooksTriggerInput
 };
 
 namespace Webhooks {
@@ -88,7 +89,7 @@ namespace Webhooks {
 
 	export type CreateFetchRequestOptions = {
 		body?: Record<string, any> | null;
-		headers?: Record<string, string>;
+		headers?: Record<string, string> | null;
 		method?: Method;
 		url: string;
 	};
@@ -146,7 +147,7 @@ class Webhooks {
 
 	createFetchRequest(options: Webhooks.CreateFetchRequestOptions): Webhooks.CreateFetchRequestResponse {
 		const url = new URL(options.url);
-		const headers = new Headers(options.headers);
+		const headers = new Headers(options.headers || {});
 
 		if (options.method === 'POST' || options.method === 'PUT') {
 			if (options.body && _.size(options.body)) {
@@ -325,6 +326,7 @@ class Webhooks {
 				response: {
 					body: await response.text(),
 					headers: Object.fromEntries(response.headers.entries()),
+					ok: response.ok,
 					status: response.status
 				},
 				retries: {
@@ -365,6 +367,7 @@ class Webhooks {
 				response: {
 					body: JSON.stringify(HttpError.wrap(err as Error).toJson()),
 					headers: {},
+					ok: false,
 					status: 500
 				},
 				retries: {

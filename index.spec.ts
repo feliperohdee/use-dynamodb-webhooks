@@ -51,6 +51,7 @@ const createTestLog = (options?: Partial<Webhooks.Log>): Webhooks.Log => {
 		response: {
 			body: '',
 			headers: {},
+			ok: true,
 			status: 200
 		},
 		retries: {
@@ -588,24 +589,41 @@ describe('/index', () => {
 		});
 
 		it('should put', async () => {
-			const res = await webhooks.putLog(createTestLog());
+			const res = await webhooks.putLog({
+				body: null,
+				headers: {},
+				id: '123',
+				method: 'GET',
+				namespace: 'spec',
+				response: {
+					body: '',
+					headers: {},
+					ok: true,
+					status: 200
+				},
+				retries: { count: 0, max: 3 },
+				status: 'SUCCESS',
+				ttl: 0,
+				url: 'https://httpbin.org/anything'
+			});
 
 			expect(res).toEqual({
 				__createdAt: expect.any(String),
 				__updatedAt: expect.any(String),
 				body: null,
 				headers: {},
-				id: expect.any(String),
+				id: '123',
 				method: 'GET',
 				namespace: 'spec',
 				response: {
 					body: '',
 					headers: {},
+					ok: true,
 					status: 200
 				},
 				retries: { count: 0, max: 3 },
 				status: 'SUCCESS',
-				ttl: expect.any(Number),
+				ttl: 0,
 				url: 'https://httpbin.org/anything'
 			});
 		});
@@ -680,6 +698,7 @@ describe('/index', () => {
 					headers: {
 						'content-type': 'application/json'
 					},
+					ok: true,
 					status: 200
 				},
 				retries: {
@@ -706,6 +725,7 @@ describe('/index', () => {
 					headers: {
 						'content-type': 'application/json'
 					},
+					ok: true,
 					status: 200
 				},
 				retries: {
@@ -750,6 +770,7 @@ describe('/index', () => {
 					headers: {
 						'content-type': 'application/json'
 					},
+					ok: false,
 					status: 500
 				},
 				retries: {
@@ -780,6 +801,7 @@ describe('/index', () => {
 				response: {
 					body: '{"context":null,"message":"FAIL to fetch","stack":[],"status":500}',
 					headers: {},
+					ok: false,
 					status: 500
 				},
 				retries: { count: 0, max: 2 },
@@ -799,6 +821,7 @@ describe('/index', () => {
 				response: {
 					body: '{"context":null,"message":"FAIL to fetch","stack":[],"status":500}',
 					headers: {},
+					ok: false,
 					status: 500
 				},
 				retries: { count: 0, max: 2 },
