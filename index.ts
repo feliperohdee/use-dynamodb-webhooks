@@ -61,6 +61,14 @@ const webhooksTriggerInput = z.object({
 	url: z.string().url()
 });
 
+const schema = {
+	fetchLogsInput: webhooksFetchLogsInput,
+	log: webhooksLog,
+	logStatus: webhooksLogStatus,
+	method: webhooksMethod,
+	triggerInput: webhooksTriggerInput,
+};
+
 namespace Webhooks {
 	export type ConstructorOptions = {
 		accessKeyId: string;
@@ -98,6 +106,8 @@ const logShape = (log: Webhooks.LogInput): Webhooks.Log => {
 };
 
 class Webhooks {
+	public static schema = schema;
+
 	public db: Dynamodb<Webhooks.Log>;
 	public ttlInSeconds: number;
 
