@@ -1,0 +1,6 @@
+.DS_Store
+.vscode
+.test.sh
+coverage
+dist
+node_modules
