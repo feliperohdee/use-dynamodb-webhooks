@@ -46,9 +46,9 @@ const webhooks = new Webhooks({
 // GET request with query parameters
 await webhooks.trigger({
 	namespace: 'users',
-	url: 'https://api.example.com/search',
-	method: 'GET',
-	body: {
+	requestUrl: 'https://api.example.com/search',
+	requestMethod: 'GET',
+	requestBody: {
 		query: 'john',
 		status: 'active',
 		limit: 10
@@ -59,25 +59,25 @@ await webhooks.trigger({
 // Basic POST webhook trigger
 await webhooks.trigger({
 	namespace: 'orders',
-	url: 'https://api.example.com/webhook',
-	method: 'POST',
-	body: {
+	requestUrl: 'https://api.example.com/webhook',
+	requestMethod: 'POST',
+	requestBody: {
 		orderId: '123',
 		status: 'completed'
 	},
-	headers: {
+	requestHeaders: {
 		Authorization: 'Bearer your-token'
 	},
-	maxRetries: 3 // Optional: default is 3, max is 10
+	retryLimit: 3 // Optional: default is 3, max is 10
 });
 
 // With form-urlencoded data
 await webhooks.trigger({
 	namespace: 'users',
-	url: 'https://api.example.com/webhook',
-	method: 'POST',
-	body: { userId: '123', action: 'signup' },
-	headers: {
+	requestUrl: 'https://api.example.com/webhook',
+	requestMethod: 'POST',
+	requestBody: { userId: '123', action: 'signup' },
+	requestHeaders: {
 		'Content-Type': 'application/x-www-form-urlencoded'
 	}
 });
@@ -85,14 +85,14 @@ await webhooks.trigger({
 // With multipart/form-data
 await webhooks.trigger({
 	namespace: 'uploads',
-	url: 'https://api.example.com/upload',
-	method: 'POST',
-	body: {
+	requestUrl: 'https://api.example.com/upload',
+	requestMethod: 'POST',
+	requestBody: {
 		userId: '123',
 		fileType: 'profile',
 		fileData: 'base64encodeddata...'
 	},
-	headers: {
+	requestHeaders: {
 		'Content-Type': 'multipart/form-data'
 	}
 });
@@ -149,11 +149,11 @@ DynamoDB TTL Configuration:
 ```typescript
 type TriggerInput = {
 	namespace: string;
-	url: string;
-	method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'HEAD';
-	body?: Record<string, any>;
-	headers?: Record<string, string>;
-	maxRetries?: number;
+	requestUrl: string;
+	requestMethod?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'HEAD';
+	requestBody?: Record<string, any>;
+	requestHeaders?: Record<string, string>;
+	retryLimit?: number; // Default: 3, Max: 10
 	idPrefix?: string; // Useful for filtering logs by ID prefix
 };
 ```
@@ -180,20 +180,23 @@ type FetchLogsInput = {
 type WebhookLog = {
 	id: string;
 	namespace: string;
-	method: string;
-	url: string;
-	body: Record<string, any> | null;
-	headers: Record<string, string> | null;
-	status: 'SUCCESS' | 'FAIL';
+	request: {
+		body: Record<string, any> | null;
+		headers: Record<string, string> | null;
+		method: string;
+		url: string;
+	};
 	response: {
 		body: string;
 		headers: Record<string, string>;
+		ok: boolean;
 		status: number;
 	};
-	retries: {
+	retry: {
 		count: number;
-		max: number;
+		limit: number;
 	};
+	status: 'SUCCESS' | 'FAIL';
 	ttl: number;
 	__createdAt: string;
 	__updatedAt: string;

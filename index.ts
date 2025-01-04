@@ -5,7 +5,7 @@ import qs from 'use-qs';
 import z from 'zod';
 import zDefault from 'zod-default-instance';
 
-const webhooksMethod = z.enum(['DELETE', 'GET', 'HEAD', 'POST', 'PUT']);
+const webhooksRequestMethod = z.enum(['DELETE', 'GET', 'HEAD', 'POST', 'PUT']);
 const webhooksLogStatus = z.enum(['FAIL', 'SUCCESS']);
 const webhooksLog = z.object({
 	__createdAt: z
@@ -20,24 +20,26 @@ const webhooksLog = z.object({
 		.default(() => {
 			return new Date().toISOString();
 		}),
-	body: z.record(z.any()).nullable(),
-	headers: z.record(z.string()).nullable(),
 	id: z.string(),
-	method: webhooksMethod.default('GET'),
 	namespace: z.string(),
+	request: z.object({
+		body: z.record(z.any()).nullable(),
+		headers: z.record(z.string()).nullable(),
+		method: webhooksRequestMethod.default('GET'),
+		url: z.string().url()
+	}),
 	response: z.object({
 		body: z.string(),
 		headers: z.record(z.string()),
 		ok: z.boolean(),
 		status: z.number()
 	}),
-	retries: z.object({
+	retry: z.object({
 		count: z.number(),
-		max: z.number().default(3)
+		limit: z.number().default(3)
 	}),
 	status: webhooksLogStatus,
-	ttl: z.number(),
-	url: z.string().url()
+	ttl: z.number()
 });
 
 const webhooksFetchLogsInput = z.object({
@@ -53,20 +55,20 @@ const webhooksFetchLogsInput = z.object({
 });
 
 const webhooksTriggerInput = z.object({
-	body: z.record(z.any()).nullable().optional(),
-	headers: z.record(z.string()).nullable().optional(),
-	idPrefix: z.string().optional(),
-	maxRetries: z.number().min(0).max(10).default(3),
-	method: webhooksMethod.optional(),
-	namespace: z.string(),
-	url: z.string().url()
+    idPrefix: z.string().optional(),
+    namespace: z.string(),
+    requestBody: z.record(z.any()).nullable().optional(),
+    requestHeaders: z.record(z.string()).nullable().optional(),
+    requestMethod: webhooksRequestMethod.optional(),
+    requestUrl: z.string().url(),
+    retryLimit: z.number().min(0).max(10).default(3)
 });
 
 const schema = {
 	fetchLogsInput: webhooksFetchLogsInput,
 	log: webhooksLog,
 	logStatus: webhooksLogStatus,
-	method: webhooksMethod,
+	method: webhooksRequestMethod,
 	triggerInput: webhooksTriggerInput
 };
 
@@ -84,7 +86,7 @@ namespace Webhooks {
 	export type Log = z.infer<typeof webhooksLog>;
 	export type LogInput = z.input<typeof webhooksLog>;
 	export type LogStatus = z.infer<typeof webhooksLogStatus>;
-	export type Method = z.infer<typeof webhooksMethod>;
+	export type Method = z.infer<typeof webhooksRequestMethod>;
 	export type TriggerInput = z.input<typeof webhooksTriggerInput>;
 
 	export type CreateFetchRequestOptions = {
@@ -297,10 +299,10 @@ class Webhooks {
 			args = await webhooksTriggerInput.parseAsync(args);
 
 			const { body, headers, method, url } = this.createFetchRequest({
-				body: args.body,
-				headers: args.headers,
-				method: args.method,
-				url: args.url
+				body: args.requestBody,
+				headers: args.requestHeaders,
+				method: args.requestMethod,
+				url: args.requestUrl
 			});
 
 			const response = await fetch(
@@ -318,30 +320,32 @@ class Webhooks {
 			);
 
 			const res = await this.putLog({
-				body: args.body || null,
-				headers: args.headers || null,
 				id: this.uuid(args.idPrefix),
-				method: args.method || 'GET',
 				namespace: args.namespace,
+				request: {
+					body: args.requestBody || null,
+					headers: args.requestHeaders || null,
+					method,
+					url
+				},
 				response: {
 					body: await response.text(),
 					headers: Object.fromEntries(response.headers.entries()),
 					ok: response.ok,
 					status: response.status
 				},
-				retries: {
+				retry: {
 					count: retries,
-					max: args.maxRetries || 3
+					limit: args.retryLimit || 3
 				},
 				status: response.ok ? 'SUCCESS' : 'FAIL',
-				ttl: Math.floor(_.now() / 1000 + this.ttlInSeconds),
-				url
+				ttl: Math.floor(_.now() / 1000 + this.ttlInSeconds)
 			});
 
 			if (!response.ok) {
 				retries += 1;
 
-				if (retries <= (args.maxRetries || 3)) {
+				if (retries <= (args.retryLimit || 3)) {
 					await new Promise(resolve => {
 						setTimeout(resolve, Math.min(500 * retries, 3000));
 					});
@@ -359,25 +363,27 @@ class Webhooks {
 			}
 
 			return this.putLog({
-				body: args.body || null,
-				headers: args.headers || null,
-				id: this.uuid(args.idPrefix),
-				method: args.method || 'GET',
-				namespace: args.namespace,
-				response: {
-					body: JSON.stringify(HttpError.wrap(err as Error).toJson()),
-					headers: {},
-					ok: false,
-					status: 500
+                id: this.uuid(args.idPrefix),
+                namespace: args.namespace,
+				request: {
+					body: args.requestBody || null,
+					headers: args.requestHeaders || null,
+					method: args.requestMethod || 'GET',
+					url: args.requestUrl
 				},
-				retries: {
-					count: 0,
-					max: args.maxRetries || 3
-				},
-				status: 'FAIL',
-				ttl: Math.floor(_.now() / 1000 + this.ttlInSeconds),
-				url: args.url
-			});
+                response: {
+                    body: JSON.stringify(HttpError.wrap((err as Error)).toJson()),
+                    headers: {},
+                    ok: false,
+                    status: 500
+                },
+                retry: {
+                    count: 0,
+                    limit: args.retryLimit || 3
+                },
+                status: 'FAIL',
+                ttl: Math.floor(_.now() / 1000 + this.ttlInSeconds)
+            });
 		}
 	}
 

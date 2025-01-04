@@ -43,24 +43,26 @@ global.fetch = vi.fn(async (url, options) => {
 
 const createTestLog = (options?: Partial<Webhooks.Log>): Webhooks.Log => {
 	return logShape({
-		body: null,
-		headers: {},
 		id: crypto.randomUUID(),
-		method: 'GET',
 		namespace: 'spec',
+		request: {
+			body: null,
+			headers: {},
+			method: 'GET',
+			url: 'https://httpbin.org/anything'
+		},
 		response: {
 			body: '',
 			headers: {},
 			ok: true,
 			status: 200
 		},
-		retries: {
+		retry: {
 			count: 0,
-			max: 3
+			limit: 3
 		},
 		status: 'SUCCESS',
 		ttl: Math.floor(Date.now() / 1000) + 3600,
-		url: 'https://httpbin.org/anything',
 		...options
 	});
 };
@@ -590,41 +592,45 @@ describe('/index', () => {
 
 		it('should put', async () => {
 			const res = await webhooks.putLog({
-				body: null,
-				headers: {},
 				id: '123',
-				method: 'GET',
 				namespace: 'spec',
+				request: {
+					body: null,
+					headers: {},
+					method: 'GET',
+					url: 'https://httpbin.org/anything'
+				},
 				response: {
 					body: '',
 					headers: {},
 					ok: true,
 					status: 200
 				},
-				retries: { count: 0, max: 3 },
+				retry: { count: 0, limit: 3 },
 				status: 'SUCCESS',
-				ttl: 0,
-				url: 'https://httpbin.org/anything'
+				ttl: 0
 			});
 
 			expect(res).toEqual({
 				__createdAt: expect.any(String),
 				__updatedAt: expect.any(String),
-				body: null,
-				headers: {},
 				id: '123',
-				method: 'GET',
 				namespace: 'spec',
+				request: {
+					body: null,
+					headers: {},
+					method: 'GET',
+					url: 'https://httpbin.org/anything'
+				},
 				response: {
 					body: '',
 					headers: {},
 					ok: true,
 					status: 200
 				},
-				retries: { count: 0, max: 3 },
+				retry: { count: 0, limit: 3 },
 				status: 'SUCCESS',
-				ttl: 0,
-				url: 'https://httpbin.org/anything'
+				ttl: 0
 			});
 		});
 	});
@@ -655,7 +661,7 @@ describe('/index', () => {
 							code: 'invalid_type',
 							expected: 'string',
 							received: 'undefined',
-							path: ['url'],
+							path: ['requestUrl'],
 							message: 'Required'
 						}
 					],
@@ -668,13 +674,13 @@ describe('/index', () => {
 
 		it('should trigger', async () => {
 			const res = await webhooks.trigger({
-				body: { test: true },
-				headers: {
+				namespace: 'spec',
+				requestBody: { test: true },
+				requestHeaders: {
 					'content-type': 'application/json'
 				},
-				method: 'POST',
-				namespace: 'spec',
-				url: 'https://httpbin.org/anything'
+				requestMethod: 'POST',
+				requestUrl: 'https://httpbin.org/anything'
 			});
 
 			expect(global.fetch).toHaveBeenCalledWith('https://httpbin.org/anything', {
@@ -686,13 +692,16 @@ describe('/index', () => {
 			});
 
 			expect(webhooks.putLog).toHaveBeenCalledWith({
-				body: { test: true },
-				headers: {
-					'content-type': 'application/json'
-				},
 				id: expect.any(String),
-				method: 'POST',
 				namespace: 'spec',
+				request: {
+					body: { test: true },
+					headers: {
+						'content-type': 'application/json'
+					},
+					method: 'POST',
+					url: 'https://httpbin.org/anything'
+				},
 				response: {
 					body: '{"success":true,"url":"https://httpbin.org/anything","options":{"body":"{\\"test\\":true}","method":"POST","headers":{}}}',
 					headers: {
@@ -701,25 +710,27 @@ describe('/index', () => {
 					ok: true,
 					status: 200
 				},
-				retries: {
+				retry: {
 					count: 0,
-					max: 3
+					limit: 3
 				},
 				status: 'SUCCESS',
-				ttl: expect.any(Number),
-				url: 'https://httpbin.org/anything'
+				ttl: expect.any(Number)
 			});
 
 			expect(res).toEqual({
 				__createdAt: expect.any(String),
 				__updatedAt: expect.any(String),
-				body: { test: true },
-				headers: {
-					'content-type': 'application/json'
-				},
 				id: expect.any(String),
-				method: 'POST',
 				namespace: 'spec',
+				request: {
+					body: { test: true },
+					headers: {
+						'content-type': 'application/json'
+					},
+					method: 'POST',
+					url: 'https://httpbin.org/anything'
+				},
 				response: {
 					body: '{"success":true,"url":"https://httpbin.org/anything","options":{"body":"{\\"test\\":true}","method":"POST","headers":{}}}',
 					headers: {
@@ -728,13 +739,12 @@ describe('/index', () => {
 					ok: true,
 					status: 200
 				},
-				retries: {
+				retry: {
 					count: 0,
-					max: 3
+					limit: 3
 				},
 				status: 'SUCCESS',
-				ttl: expect.any(Number),
-				url: 'https://httpbin.org/anything'
+				ttl: expect.any(Number)
 			});
 		});
 
@@ -749,9 +759,9 @@ describe('/index', () => {
 			});
 
 			const res = await webhooks.trigger({
-				body: { test: true },
 				namespace: 'spec',
-				url: 'https://httpbin.org/anything'
+				requestBody: { test: true },
+				requestUrl: 'https://httpbin.org/anything'
 			});
 
 			expect(global.fetch).toHaveBeenCalledTimes(4);
@@ -760,11 +770,14 @@ describe('/index', () => {
 			expect(res).toEqual({
 				__createdAt: expect.any(String),
 				__updatedAt: expect.any(String),
-				body: { test: true },
-				headers: null,
 				id: expect.any(String),
-				method: 'GET',
 				namespace: 'spec',
+				request: {
+					body: { test: true },
+					headers: null,
+					method: 'GET',
+					url: 'https://httpbin.org/anything?test=true'
+				},
 				response: {
 					body: '{}',
 					headers: {
@@ -773,13 +786,12 @@ describe('/index', () => {
 					ok: false,
 					status: 500
 				},
-				retries: {
+				retry: {
 					count: 3,
-					max: 3
+					limit: 3
 				},
 				status: 'FAIL',
-				ttl: expect.any(Number),
-				url: 'https://httpbin.org/anything?test=true'
+				ttl: expect.any(Number)
 			});
 		});
 
@@ -787,47 +799,51 @@ describe('/index', () => {
 			vi.spyOn(global, 'fetch').mockRejectedValue(new Error('FAIL to fetch'));
 
 			const res = await webhooks.trigger({
-				maxRetries: 2,
 				namespace: 'spec',
-				url: 'https://invalid-url.com'
+				requestUrl: 'https://invalid-url.com',
+				retryLimit: 2
 			});
 
 			expect(webhooks.putLog).toHaveBeenCalledWith({
-				body: null,
-				headers: null,
 				id: expect.any(String),
-				method: 'GET',
 				namespace: 'spec',
+				request: {
+					body: null,
+					headers: null,
+					method: 'GET',
+					url: 'https://invalid-url.com'
+				},
 				response: {
 					body: '{"context":null,"message":"FAIL to fetch","stack":[],"status":500}',
 					headers: {},
 					ok: false,
 					status: 500
 				},
-				retries: { count: 0, max: 2 },
+				retry: { count: 0, limit: 2 },
 				status: 'FAIL',
-				ttl: expect.any(Number),
-				url: 'https://invalid-url.com'
+				ttl: expect.any(Number)
 			});
 
 			expect(res).toEqual({
 				__createdAt: expect.any(String),
 				__updatedAt: expect.any(String),
-				body: null,
-				headers: null,
 				id: expect.any(String),
-				method: 'GET',
 				namespace: 'spec',
+				request: {
+					body: null,
+					headers: null,
+					method: 'GET',
+					url: 'https://invalid-url.com'
+				},
 				response: {
 					body: '{"context":null,"message":"FAIL to fetch","stack":[],"status":500}',
 					headers: {},
 					ok: false,
 					status: 500
 				},
-				retries: { count: 0, max: 2 },
+				retry: { count: 0, limit: 2 },
 				status: 'FAIL',
-				ttl: expect.any(Number),
-				url: 'https://invalid-url.com'
+				ttl: expect.any(Number)
 			});
 		});
 	});
