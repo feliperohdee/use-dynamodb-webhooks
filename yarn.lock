@@ -1850,10 +1850,10 @@ use-async-helpers@^1.0.15:
   resolved "https://registry.yarnpkg.com/use-async-helpers/-/use-async-helpers-1.0.15.tgz#5174eabbe824dd36efc7bc3c42c50ff0ed803575"
   integrity sha512-9/UjY4VVjCBvk8tQvemZZyCO+BvtEmMB0g6meSXfA8Wfn8h9Tz08Ke4nThOxp4K9dbz4NObu9P2nz3BwIfaSQw==
 
-use-dynamodb@^1.0.44:
-  version "1.0.44"
-  resolved "https://registry.yarnpkg.com/use-dynamodb/-/use-dynamodb-1.0.44.tgz#d8f1b9e929fbaa012de61715318eae1f5e2e9346"
-  integrity sha512-zyz76n7kps6H597yqiExsWeAqbmuq4/m/kBcocR3hXf+4yvlByElGsNV716q/AjLumKP2onIUGZ/50fQuJHqug==
+use-dynamodb@^1.0.45:
+  version "1.0.45"
+  resolved "https://registry.yarnpkg.com/use-dynamodb/-/use-dynamodb-1.0.45.tgz#7dc8486909b111c44f51a351a46d1a47cb0bfbde"
+  integrity sha512-Ob/Xcuap9k3cGNkc5ndBwnbcM0kudANfZ5KcjYFf2uA9wolC3LkxfwmpqdfQxLzuoiy+6goRnEcrlmpzzD8iHQ==
   dependencies:
     "@aws-sdk/client-dynamodb" "^3.713.0"
     "@aws-sdk/lib-dynamodb" "^3.713.0"
