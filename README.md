@@ -34,7 +34,7 @@ const webhooks = new Webhooks({
 	accessKeyId: process.env.AWS_ACCESS_KEY_ID,
 	secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
 	region: process.env.AWS_REGION,
-	tableName: 'my-webhooks-logs',
+	tableName: 'YOUR_TABLE_NAME',
 	ttlInSeconds: 86400, // 24 hours (Default: 7776000 [90 days])
 	createTable: true // Optional: automatically create DynamoDB table
 });
