@@ -147,7 +147,7 @@ class Webhooks {
 		return this.db.logs.clear(namespace);
 	}
 
-	createFetchRequest(options: Webhooks.CreateFetchRequestOptions): Webhooks.CreateFetchRequestResponse {
+	private createFetchRequest(options: Webhooks.CreateFetchRequestOptions): Webhooks.CreateFetchRequestResponse {
 		const url = new URL(options.url);
 		const headers = new Headers(options.headers || {});
 
@@ -288,7 +288,7 @@ class Webhooks {
 		};
 	}
 
-	async putLog(log: Webhooks.LogInput): Promise<Webhooks.Log> {
+	private async putLog(log: Webhooks.LogInput): Promise<Webhooks.Log> {
 		log = await webhooksLog.parseAsync(log);
 
 		return logShape(await this.db.logs.put(log));
@@ -387,7 +387,7 @@ class Webhooks {
 		}
 	}
 
-	uuid(idPrefix?: string): string {
+	private uuid(idPrefix?: string): string {
 		return _.compact([idPrefix, crypto.randomUUID()]).join('#');
 	}
 }

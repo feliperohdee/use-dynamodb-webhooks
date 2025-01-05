@@ -117,6 +117,7 @@ describe('/index', () => {
 	describe('createFetchRequest', () => {
 		describe('GET', () => {
 			it('should returns adding qs', () => {
+				// @ts-expect-error
 				const res = webhooks.createFetchRequest({
 					body: { a: 1, b: 2 },
 					headers: { a: '1' },
@@ -131,6 +132,7 @@ describe('/index', () => {
 			});
 
 			it('should returns merging qs', () => {
+				// @ts-expect-error
 				const res = webhooks.createFetchRequest({
 					body: { a: 1, b: 2, c: 3 },
 					headers: { a: '1' },
@@ -145,6 +147,7 @@ describe('/index', () => {
 			});
 
 			it('should returns without qs', () => {
+				// @ts-expect-error
 				const res = webhooks.createFetchRequest({
 					body: null,
 					headers: { a: '1' },
@@ -161,6 +164,7 @@ describe('/index', () => {
 
 		describe('POST', () => {
 			it('should returns', () => {
+				// @ts-expect-error
 				const res = webhooks.createFetchRequest({
 					body: { a: 1, b: 2 },
 					headers: { a: '1' },
@@ -175,6 +179,7 @@ describe('/index', () => {
 			});
 
 			it('should returns with application/x-www-form-urlencoded', () => {
+				// @ts-expect-error
 				const res = webhooks.createFetchRequest({
 					body: { a: 1, b: 2 },
 					headers: { 'content-type': 'application/x-www-form-urlencoded' },
@@ -189,6 +194,7 @@ describe('/index', () => {
 			});
 
 			it('should returns with multipart/form-data', () => {
+				// @ts-expect-error
 				const res = webhooks.createFetchRequest({
 					body: { a: 1, b: 2 },
 					headers: { 'content-type': 'multipart/form-data' },
@@ -207,6 +213,7 @@ describe('/index', () => {
 			});
 
 			it('should returns without body', () => {
+				// @ts-expect-error
 				const res = webhooks.createFetchRequest({
 					body: null,
 					headers: { a: '1' },
@@ -232,6 +239,7 @@ describe('/index', () => {
 					setTimeout(resolve, 10);
 				});
 
+				// @ts-expect-error
 				const log = await webhooks.putLog(
 					createTestLog({
 						status: i % 2 === 0 ? 'SUCCESS' : 'FAIL'
@@ -591,6 +599,7 @@ describe('/index', () => {
 		});
 
 		it('should put', async () => {
+			// @ts-expect-error
 			const res = await webhooks.putLog({
 				id: '123',
 				namespace: 'spec',
@@ -637,6 +646,7 @@ describe('/index', () => {
 
 	describe('trigger', () => {
 		beforeEach(() => {
+			// @ts-expect-error
 			vi.spyOn(webhooks, 'putLog');
 		});
 
@@ -654,6 +664,7 @@ describe('/index', () => {
 
 				throw new Error('Expected to throw');
 			} catch (err) {
+				// @ts-expect-error
 				expect(webhooks.putLog).not.toHaveBeenCalled();
 				expect((err as HttpError).toJson()).toEqual({
 					context: [
@@ -691,6 +702,7 @@ describe('/index', () => {
 				method: 'POST'
 			});
 
+			// @ts-expect-error
 			expect(webhooks.putLog).toHaveBeenCalledWith({
 				id: expect.any(String),
 				namespace: 'spec',
@@ -765,6 +777,7 @@ describe('/index', () => {
 			});
 
 			expect(global.fetch).toHaveBeenCalledTimes(4);
+			// @ts-expect-error
 			expect(webhooks.putLog).toHaveBeenCalledTimes(4);
 
 			expect(res).toEqual({
@@ -804,6 +817,7 @@ describe('/index', () => {
 				retryLimit: 2
 			});
 
+			// @ts-expect-error
 			expect(webhooks.putLog).toHaveBeenCalledWith({
 				id: expect.any(String),
 				namespace: 'spec',
@@ -850,11 +864,13 @@ describe('/index', () => {
 
 	describe('uuid', () => {
 		it('should generate a uuid', () => {
+			// @ts-expect-error
 			const res = webhooks.uuid();
 			expect(res).toEqual(expect.any(String));
 		});
 
 		it('should generate a uuid with idPrefix', () => {
+			// @ts-expect-error
 			const res = webhooks.uuid('123');
 			expect(res).toMatch(/^123#.*$/);
 		});
