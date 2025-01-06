@@ -676,7 +676,7 @@ describe('/index', () => {
 							message: 'Required'
 						}
 					],
-					message: 'Validation FAIL',
+					message: 'Validation Error',
 					stack: [],
 					status: 400
 				});

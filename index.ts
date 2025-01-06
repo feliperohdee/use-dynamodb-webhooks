@@ -55,13 +55,13 @@ const webhooksFetchLogsInput = z.object({
 });
 
 const webhooksTriggerInput = z.object({
-    idPrefix: z.string().optional(),
-    namespace: z.string(),
-    requestBody: z.record(z.any()).nullable().optional(),
-    requestHeaders: z.record(z.string()).nullable().optional(),
-    requestMethod: webhooksRequestMethod.optional(),
-    requestUrl: z.string().url(),
-    retryLimit: z.number().min(0).max(10).default(3)
+	idPrefix: z.string().optional(),
+	namespace: z.string(),
+	requestBody: z.record(z.any()).nullable().optional(),
+	requestHeaders: z.record(z.string()).nullable().optional(),
+	requestMethod: webhooksRequestMethod.optional(),
+	requestUrl: z.string().url(),
+	retryLimit: z.number().min(0).max(10).default(3)
 });
 
 const schema = {
@@ -206,8 +206,8 @@ class Webhooks {
 		};
 	}
 
-	async fetchLogs(args: Webhooks.FetchLogsInput): Promise<Dynamodb.MultiResponse<Webhooks.Log, false>> {
-		args = await webhooksFetchLogsInput.parseAsync(args);
+	async fetchLogs(input: Webhooks.FetchLogsInput): Promise<Dynamodb.MultiResponse<Webhooks.Log, false>> {
+		const args = await webhooksFetchLogsInput.parseAsync(input);
 
 		let queryOptions: Dynamodb.QueryOptions<Webhooks.Log> = {
 			attributeNames: {},
@@ -288,102 +288,106 @@ class Webhooks {
 		};
 	}
 
-	private async putLog(log: Webhooks.LogInput): Promise<Webhooks.Log> {
-		log = await webhooksLog.parseAsync(log);
+	private async putLog(input: Webhooks.LogInput): Promise<Webhooks.Log> {
+		const args = await webhooksLog.parseAsync(input);
 
-		return logShape(await this.db.logs.put(log));
+		return logShape(await this.db.logs.put(args));
 	}
 
-	async trigger(args: Webhooks.TriggerInput, retries: number = 0): Promise<Webhooks.Log> {
+	async trigger(input: Webhooks.TriggerInput, retries: number = 0): Promise<Webhooks.Log> {
 		try {
-			args = await webhooksTriggerInput.parseAsync(args);
+			const args = await webhooksTriggerInput.parseAsync(input);
 
-			const { body, headers, method, url } = this.createFetchRequest({
-				body: args.requestBody,
-				headers: args.requestHeaders,
-				method: args.requestMethod,
-				url: args.requestUrl
-			});
+			try {
+				const { body, headers, method, url } = this.createFetchRequest({
+					body: args.requestBody,
+					headers: args.requestHeaders,
+					method: args.requestMethod,
+					url: args.requestUrl
+				});
 
-			const response = await fetch(
-				url,
-				body && (method === 'POST' || method === 'PUT')
-					? {
-							body,
-							method,
-							headers
-						}
-					: {
-							method,
-							headers
-						}
-			);
+				const response = await fetch(
+					url,
+					body && (method === 'POST' || method === 'PUT')
+						? {
+								body,
+								method,
+								headers
+							}
+						: {
+								method,
+								headers
+							}
+				);
 
-			const res = await this.putLog({
-				id: this.uuid(args.idPrefix),
-				namespace: args.namespace,
-				request: {
-					body: args.requestBody || null,
-					headers: args.requestHeaders || null,
-					method,
-					url
-				},
-				response: {
-					body: await response.text(),
-					headers: Object.fromEntries(response.headers.entries()),
-					ok: response.ok,
-					status: response.status
-				},
-				retry: {
-					count: retries,
-					limit: args.retryLimit || 3
-				},
-				status: response.ok ? 'SUCCESS' : 'FAIL',
-				ttl: Math.floor(_.now() / 1000 + this.ttlInSeconds)
-			});
+				const res = await this.putLog({
+					id: this.uuid(args.idPrefix),
+					namespace: args.namespace,
+					request: {
+						body: args.requestBody || null,
+						headers: args.requestHeaders || null,
+						method,
+						url
+					},
+					response: {
+						body: await response.text(),
+						headers: Object.fromEntries(response.headers.entries()),
+						ok: response.ok,
+						status: response.status
+					},
+					retry: {
+						count: retries,
+						limit: args.retryLimit || 3
+					},
+					status: response.ok ? 'SUCCESS' : 'FAIL',
+					ttl: Math.floor(_.now() / 1000 + this.ttlInSeconds)
+				});
 
-			if (!response.ok) {
-				retries += 1;
+				if (!response.ok) {
+					retries += 1;
 
-				if (retries <= (args.retryLimit || 3)) {
-					await new Promise(resolve => {
-						setTimeout(resolve, Math.min(500 * retries, 3000));
-					});
+					if (retries <= (args.retryLimit || 3)) {
+						await new Promise(resolve => {
+							setTimeout(resolve, Math.min(500 * retries, 3000));
+						});
 
-					return this.trigger(args, retries);
+						return this.trigger(args, retries);
+					}
 				}
-			}
 
-			return res;
+				return res;
+			} catch (err) {
+				return this.putLog({
+					id: this.uuid(args.idPrefix),
+					namespace: args.namespace,
+					request: {
+						body: args.requestBody || null,
+						headers: args.requestHeaders || null,
+						method: args.requestMethod || 'GET',
+						url: args.requestUrl
+					},
+					response: {
+						body: JSON.stringify(HttpError.wrap(err as Error).toJson()),
+						headers: {},
+						ok: false,
+						status: 500
+					},
+					retry: {
+						count: 0,
+						limit: args.retryLimit || 3
+					},
+					status: 'FAIL',
+					ttl: Math.floor(_.now() / 1000 + this.ttlInSeconds)
+				});
+			}
 		} catch (err) {
 			if (err instanceof z.ZodError) {
-				throw new HttpError(400, 'Validation FAIL', {
+				throw new HttpError(400, 'Validation Error', {
 					context: err.errors
 				});
 			}
 
-			return this.putLog({
-                id: this.uuid(args.idPrefix),
-                namespace: args.namespace,
-				request: {
-					body: args.requestBody || null,
-					headers: args.requestHeaders || null,
-					method: args.requestMethod || 'GET',
-					url: args.requestUrl
-				},
-                response: {
-                    body: JSON.stringify(HttpError.wrap((err as Error)).toJson()),
-                    headers: {},
-                    ok: false,
-                    status: 500
-                },
-                retry: {
-                    count: 0,
-                    limit: args.retryLimit || 3
-                },
-                status: 'FAIL',
-                ttl: Math.floor(_.now() / 1000 + this.ttlInSeconds)
-            });
+			throw err;
 		}
 	}
 
