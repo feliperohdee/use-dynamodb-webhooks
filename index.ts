@@ -5,9 +5,9 @@ import qs from 'use-qs';
 import z from 'zod';
 import zDefault from 'zod-default-instance';
 
-const webhooksRequestMethod = z.enum(['DELETE', 'GET', 'HEAD', 'POST', 'PUT']);
-const webhooksLogStatus = z.enum(['FAIL', 'SUCCESS']);
-const webhooksLog = z.object({
+const requestMethod = z.enum(['DELETE', 'GET', 'HEAD', 'POST', 'PUT']);
+const logStatus = z.enum(['FAIL', 'SUCCESS']);
+const log = z.object({
 	__createdAt: z
 		.string()
 		.datetime()
@@ -25,7 +25,7 @@ const webhooksLog = z.object({
 	request: z.object({
 		body: z.record(z.any()).nullable(),
 		headers: z.record(z.string()).nullable(),
-		method: webhooksRequestMethod.default('GET'),
+		method: requestMethod.default('GET'),
 		url: z.string().url()
 	}),
 	response: z.object({
@@ -38,11 +38,11 @@ const webhooksLog = z.object({
 		count: z.number(),
 		limit: z.number().default(3)
 	}),
-	status: webhooksLogStatus,
+	status: logStatus,
 	ttl: z.number()
 });
 
-const webhooksFetchLogsInput = z.object({
+const fetchLogsInput = z.object({
 	desc: z.boolean().default(false),
 	from: z.string().datetime({ offset: true }).optional(),
 	id: z.string().optional(),
@@ -50,26 +50,26 @@ const webhooksFetchLogsInput = z.object({
 	limit: z.number().min(1).default(100),
 	namespace: z.string(),
 	startKey: z.record(z.any()).nullable().default(null),
-	status: webhooksLogStatus.nullable().optional(),
+	status: logStatus.nullable().optional(),
 	to: z.string().datetime({ offset: true }).optional()
 });
 
-const webhooksTriggerInput = z.object({
+const triggerInput = z.object({
 	idPrefix: z.string().optional(),
 	namespace: z.string(),
 	requestBody: z.record(z.any()).nullable().optional(),
 	requestHeaders: z.record(z.string()).nullable().optional(),
-	requestMethod: webhooksRequestMethod.optional(),
+	requestMethod: requestMethod.optional(),
 	requestUrl: z.string().url(),
 	retryLimit: z.number().min(0).max(10).default(3)
 });
 
 const schema = {
-	fetchLogsInput: webhooksFetchLogsInput,
-	log: webhooksLog,
-	logStatus: webhooksLogStatus,
-	method: webhooksRequestMethod,
-	triggerInput: webhooksTriggerInput
+	fetchLogsInput,
+	log,
+	logStatus,
+	requestMethod,
+	triggerInput
 };
 
 namespace Webhooks {
@@ -82,12 +82,12 @@ namespace Webhooks {
 		ttlInSeconds?: number;
 	};
 
-	export type FetchLogsInput = z.input<typeof webhooksFetchLogsInput>;
-	export type Log = z.infer<typeof webhooksLog>;
-	export type LogInput = z.input<typeof webhooksLog>;
-	export type LogStatus = z.infer<typeof webhooksLogStatus>;
-	export type Method = z.infer<typeof webhooksRequestMethod>;
-	export type TriggerInput = z.input<typeof webhooksTriggerInput>;
+	export type FetchLogsInput = z.input<typeof fetchLogsInput>;
+	export type Log = z.infer<typeof log>;
+	export type LogInput = z.input<typeof log>;
+	export type LogStatus = z.infer<typeof logStatus>;
+	export type Method = z.infer<typeof requestMethod>;
+	export type TriggerInput = z.input<typeof triggerInput>;
 
 	export type CreateFetchRequestOptions = {
 		body?: Record<string, any> | null;
@@ -104,8 +104,8 @@ namespace Webhooks {
 	};
 }
 
-const logShape = (log: Webhooks.LogInput): Webhooks.Log => {
-	return zDefault(webhooksLog, log);
+const logShape = (input: Webhooks.LogInput): Webhooks.Log => {
+	return zDefault(log, input);
 };
 
 class Webhooks {
@@ -207,7 +207,7 @@ class Webhooks {
 	}
 
 	async fetchLogs(input: Webhooks.FetchLogsInput): Promise<Dynamodb.MultiResponse<Webhooks.Log, false>> {
-		const args = await webhooksFetchLogsInput.parseAsync(input);
+		const args = await fetchLogsInput.parseAsync(input);
 
 		let queryOptions: Dynamodb.QueryOptions<Webhooks.Log> = {
 			attributeNames: {},
@@ -289,14 +289,14 @@ class Webhooks {
 	}
 
 	private async putLog(input: Webhooks.LogInput): Promise<Webhooks.Log> {
-		const args = await webhooksLog.parseAsync(input);
+		const args = await log.parseAsync(input);
 
 		return logShape(await this.db.logs.put(args));
 	}
 
 	async trigger(input: Webhooks.TriggerInput, retries: number = 0): Promise<Webhooks.Log> {
 		try {
-			const args = await webhooksTriggerInput.parseAsync(input);
+			const args = await triggerInput.parseAsync(input);
 
 			try {
 				const { body, headers, method, url } = this.createFetchRequest({
