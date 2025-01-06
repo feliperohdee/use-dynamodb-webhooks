@@ -6,6 +6,20 @@ import z from 'zod';
 import zDefault from 'zod-default-instance';
 
 const requestMethod = z.enum(['DELETE', 'GET', 'HEAD', 'POST', 'PUT']);
+const request = z.object({
+	body: z.record(z.any()).nullable(),
+	headers: z.record(z.string()).nullable(),
+	method: requestMethod.default('GET'),
+	url: z.string().url()
+});
+
+const response = z.object({
+	body: z.string(),
+	headers: z.record(z.string()),
+	ok: z.boolean(),
+	status: z.number()
+});
+
 const logStatus = z.enum(['FAIL', 'SUCCESS']);
 const log = z.object({
 	__createdAt: z
@@ -22,18 +36,8 @@ const log = z.object({
 		}),
 	id: z.string(),
 	namespace: z.string(),
-	request: z.object({
-		body: z.record(z.any()).nullable(),
-		headers: z.record(z.string()).nullable(),
-		method: requestMethod.default('GET'),
-		url: z.string().url()
-	}),
-	response: z.object({
-		body: z.string(),
-		headers: z.record(z.string()),
-		ok: z.boolean(),
-		status: z.number()
-	}),
+	request,
+	response,
 	retry: z.object({
 		count: z.number(),
 		limit: z.number().default(3)
@@ -68,7 +72,9 @@ const schema = {
 	fetchLogsInput,
 	log,
 	logStatus,
+	request,
 	requestMethod,
+	response,
 	triggerInput
 };
 
@@ -86,22 +92,10 @@ namespace Webhooks {
 	export type Log = z.infer<typeof log>;
 	export type LogInput = z.input<typeof log>;
 	export type LogStatus = z.infer<typeof logStatus>;
-	export type Method = z.infer<typeof requestMethod>;
+	export type Request = z.infer<typeof request>;
+	export type RequestMethod = z.infer<typeof requestMethod>;
+	export type Response = z.infer<typeof response>;
 	export type TriggerInput = z.input<typeof triggerInput>;
-
-	export type CreateFetchRequestOptions = {
-		body?: Record<string, any> | null;
-		headers?: Record<string, string> | null;
-		method?: Method;
-		url: string;
-	};
-
-	export type CreateFetchRequestResponse = {
-		body: BodyInit | null;
-		headers: Headers;
-		method: Method;
-		url: string;
-	};
 }
 
 const logShape = (input: Webhooks.LogInput): Webhooks.Log => {
@@ -147,40 +141,45 @@ class Webhooks {
 		return this.db.logs.clear(namespace);
 	}
 
-	private createFetchRequest(options: Webhooks.CreateFetchRequestOptions): Webhooks.CreateFetchRequestResponse {
-		const url = new URL(options.url);
-		const headers = new Headers(options.headers || {});
+	private createFetchRequest(request: Webhooks.Request): {
+		body: BodyInit | null;
+		headers: Headers;
+		method: Webhooks.RequestMethod;
+		url: string;
+	} {
+		const url = new URL(request.url);
+		const headers = new Headers(request.headers || {});
 
-		if (options.method === 'POST' || options.method === 'PUT') {
-			if (options.body && _.size(options.body)) {
+		if (request.method === 'POST' || request.method === 'PUT') {
+			if (request.body && _.size(request.body)) {
 				const contentType = headers.get('content-type');
 
 				if (_.includes(contentType, 'application/x-www-form-urlencoded')) {
 					return {
-						body: qs.stringify(options.body, { addQueryPrefix: false }),
+						body: qs.stringify(request.body, { addQueryPrefix: false }),
 						headers,
-						method: options.method,
-						url: options.url
+						method: request.method,
+						url: request.url
 					};
 				} else if (_.includes(contentType, 'multipart/form-data')) {
 					const formdata = new FormData();
 
-					_.forEach(options.body, (value, key) => {
+					_.forEach(request.body, (value, key) => {
 						formdata.append(key, value);
 					});
 
 					return {
 						body: formdata,
 						headers,
-						method: options.method,
-						url: options.url
+						method: request.method,
+						url: request.url
 					};
 				} else {
 					return {
-						body: JSON.stringify(options.body),
+						body: JSON.stringify(request.body),
 						headers,
-						method: options.method,
-						url: options.url
+						method: request.method,
+						url: request.url
 					};
 				}
 			}
@@ -188,20 +187,20 @@ class Webhooks {
 			return {
 				body: null,
 				headers,
-				method: options.method,
-				url: options.url
+				method: request.method,
+				url: request.url
 			};
 		}
 
 		const queryString = qs.stringify({
 			...Object.fromEntries(url.searchParams.entries()),
-			...options.body
+			...request.body
 		});
 
 		return {
 			body: null,
 			headers,
-			method: options.method || 'GET',
+			method: request.method || 'GET',
 			url: `${url.protocol}//${url.host}${url.pathname}${queryString}`
 		};
 	}
@@ -300,9 +299,9 @@ class Webhooks {
 
 			try {
 				const { body, headers, method, url } = this.createFetchRequest({
-					body: args.requestBody,
-					headers: args.requestHeaders,
-					method: args.requestMethod,
+					body: args.requestBody || null,
+					headers: args.requestHeaders || null,
+					method: args.requestMethod || 'GET',
 					url: args.requestUrl
 				});
 
