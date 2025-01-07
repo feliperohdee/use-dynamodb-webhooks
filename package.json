@@ -2,7 +2,7 @@
 	"name": "use-dynamodb-webhooks",
 	"dependencies": {
 		"lodash": "^4.17.21",
-		"use-dynamodb": "^1.0.51",
+		"use-dynamodb": "^1.0.52",
 		"use-http-error": "^1.0.1",
 		"use-qs": "^1.0.1",
 		"zod": "^3.24.1",
