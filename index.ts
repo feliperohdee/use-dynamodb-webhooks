@@ -113,6 +113,7 @@ class Webhooks {
 			accessKeyId: options.accessKeyId,
 			indexes: [
 				{
+					forceGlobal: true,
 					name: 'namespace-createdAt',
 					partition: 'namespace',
 					sort: '__createdAt'
