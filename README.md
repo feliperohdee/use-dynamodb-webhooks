@@ -192,10 +192,8 @@ type WebhookLog = {
 		ok: boolean;
 		status: number;
 	};
-	retry: {
-		count: number;
-		limit: number;
-	};
+	retryCount: number;
+	retryLimit: number;
 	status: 'SUCCESS' | 'FAIL';
 	ttl: number;
 	__createdAt: string;

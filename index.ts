@@ -36,12 +36,16 @@ const log = z.object({
 		}),
 	id: z.string(),
 	namespace: z.string(),
-	request,
-	response,
-	retry: z.object({
-		count: z.number(),
-		limit: z.number().default(3)
-	}),
+	requestBody: request.shape.body,
+	requestHeaders: request.shape.headers,
+	requestMethod: request.shape.method,
+	requestUrl: request.shape.url,
+	responseBody: response.shape.body,
+	responseHeaders: response.shape.headers,
+	responseOk: response.shape.ok,
+	responseStatus: response.shape.status,
+	retryCount: z.number().default(0),
+	retryLimit: z.number().default(3),
 	status: logStatus,
 	ttl: z.number()
 });
@@ -323,22 +327,16 @@ class Webhooks {
 				const res = await this.putLog({
 					id: this.uuid(args.idPrefix),
 					namespace: args.namespace,
-					request: {
-						body: args.requestBody || null,
-						headers: args.requestHeaders || null,
-						method,
-						url
-					},
-					response: {
-						body: await response.text(),
-						headers: Object.fromEntries(response.headers.entries()),
-						ok: response.ok,
-						status: response.status
-					},
-					retry: {
-						count: retries,
-						limit: args.retryLimit || 3
-					},
+					requestBody: args.requestBody || null,
+					requestHeaders: args.requestHeaders || null,
+					requestMethod: method,
+					requestUrl: url,
+					responseBody: await response.text(),
+					responseHeaders: Object.fromEntries(response.headers.entries()),
+					responseOk: response.ok,
+					responseStatus: response.status,
+					retryCount: retries,
+					retryLimit: args.retryLimit || 3,
 					status: response.ok ? 'SUCCESS' : 'FAIL',
 					ttl: Math.floor(_.now() / 1000 + this.ttlInSeconds)
 				});
@@ -360,22 +358,16 @@ class Webhooks {
 				return this.putLog({
 					id: this.uuid(args.idPrefix),
 					namespace: args.namespace,
-					request: {
-						body: args.requestBody || null,
-						headers: args.requestHeaders || null,
-						method: args.requestMethod || 'GET',
-						url: args.requestUrl
-					},
-					response: {
-						body: JSON.stringify(HttpError.wrap(err as Error).toJson()),
-						headers: {},
-						ok: false,
-						status: 500
-					},
-					retry: {
-						count: 0,
-						limit: args.retryLimit || 3
-					},
+					requestBody: args.requestBody || null,
+					requestHeaders: args.requestHeaders || null,
+					requestMethod: args.requestMethod || 'GET',
+					requestUrl: args.requestUrl,
+					responseBody: JSON.stringify(HttpError.wrap(err as Error).toJson()),
+					responseHeaders: {},
+					responseOk: false,
+					responseStatus: 500,
+					retryCount: 0,
+					retryLimit: args.retryLimit || 3,
 					status: 'FAIL',
 					ttl: Math.floor(_.now() / 1000 + this.ttlInSeconds)
 				});
