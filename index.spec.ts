@@ -698,7 +698,8 @@ describe('/index', () => {
 				requestHeaders: { 'content-type': 'application/json' },
 				requestMethod: 'POST',
 				requestUrl: 'https://httpbin.org/anything',
-				responseBody: '{"success":true,"url":"https://httpbin.org/anything","options":{"body":"{\\"test\\":true}","method":"POST","headers":{}}}',
+				responseBody:
+					'{"success":true,"url":"https://httpbin.org/anything","options":{"body":"{\\"test\\":true}","method":"POST","headers":{}}}',
 				responseHeaders: { 'content-type': 'application/json' },
 				responseOk: true,
 				responseStatus: 200,
@@ -717,7 +718,8 @@ describe('/index', () => {
 				requestHeaders: { 'content-type': 'application/json' },
 				requestMethod: 'POST',
 				requestUrl: 'https://httpbin.org/anything',
-				responseBody: '{"success":true,"url":"https://httpbin.org/anything","options":{"body":"{\\"test\\":true}","method":"POST","headers":{}}}',
+				responseBody:
+					'{"success":true,"url":"https://httpbin.org/anything","options":{"body":"{\\"test\\":true}","method":"POST","headers":{}}}',
 				responseHeaders: { 'content-type': 'application/json' },
 				responseOk: true,
 				responseStatus: 200,

@@ -5,11 +5,10 @@ import qs from 'use-qs';
 import z from 'zod';
 import zDefault from 'zod-default-instance';
 
-const requestMethod = z.enum(['DELETE', 'GET', 'HEAD', 'POST', 'PUT']);
 const request = z.object({
 	body: z.record(z.any()).nullable(),
 	headers: z.record(z.string()).nullable(),
-	method: requestMethod.default('GET'),
+	method: z.enum(['DELETE', 'GET', 'HEAD', 'POST', 'PUT']),
 	url: z.string().url()
 });
 
@@ -67,8 +66,8 @@ const triggerInput = z.object({
 	namespace: z.string(),
 	requestBody: z.record(z.any()).nullable().optional(),
 	requestHeaders: z.record(z.string()).nullable().optional(),
-	requestMethod: requestMethod.optional(),
-	requestUrl: z.string().url(),
+	requestMethod: request.shape.method.default('GET'),
+	requestUrl: request.shape.url,
 	retryLimit: z.number().min(0).max(10).default(3)
 });
 
@@ -77,7 +76,6 @@ const schema = {
 	log,
 	logStatus,
 	request,
-	requestMethod,
 	response,
 	triggerInput
 };
@@ -97,7 +95,6 @@ namespace Webhooks {
 	export type LogInput = z.input<typeof log>;
 	export type LogStatus = z.infer<typeof logStatus>;
 	export type Request = z.infer<typeof request>;
-	export type RequestMethod = z.infer<typeof requestMethod>;
 	export type Response = z.infer<typeof response>;
 	export type TriggerInput = z.input<typeof triggerInput>;
 }
@@ -149,7 +146,7 @@ class Webhooks {
 	private createFetchRequest(request: Webhooks.Request): {
 		body: BodyInit | null;
 		headers: Headers;
-		method: Webhooks.RequestMethod;
+		method: Webhooks.Request['method'];
 		url: string;
 	} {
 		const url = new URL(request.url);
