@@ -34,6 +34,7 @@ const log = z.object({
 			return new Date().toISOString();
 		}),
 	id: z.string(),
+	metadata: z.record(z.any()).default({}),
 	namespace: z.string(),
 	requestBody: request.shape.body,
 	requestHeaders: request.shape.headers,
@@ -52,8 +53,8 @@ const log = z.object({
 const fetchLogsInput = z.object({
 	desc: z.boolean().default(false),
 	from: z.string().datetime({ offset: true }).optional(),
-	id: z.string().optional(),
 	limit: z.number().min(1).default(100),
+	metadata: z.record(z.any()).default({}),
 	namespace: z.string(),
 	startKey: z.record(z.any()).nullable().default(null),
 	status: logStatus.nullable().optional(),
@@ -61,6 +62,7 @@ const fetchLogsInput = z.object({
 });
 
 const triggerInput = z.object({
+	metadata: z.record(z.any()).default({}),
 	namespace: z.string(),
 	requestBody: z.record(z.any()).nullable().optional(),
 	requestHeaders: z.record(z.string()).nullable().optional(),
@@ -209,25 +211,54 @@ class Webhooks {
 		const args = await fetchLogsInput.parseAsync(input);
 
 		let queryOptions: Dynamodb.QueryOptions<Webhooks.Log> = {
-			attributeNames: {},
-			attributeValues: {},
+			attributeNames: { '#namespace': 'namespace' },
+			attributeValues: { ':namespace': args.namespace },
 			filterExpression: '',
-			item: { namespace: args.namespace, id: args.id },
+			index: 'namespace-createdAt',
 			limit: args.limit,
-			prefix: true,
+			queryExpression: '#namespace = :namespace',
 			scanIndexForward: args.desc ? false : true,
 			startKey: args.startKey
 		};
 
 		if (args.from && args.to) {
 			queryOptions.attributeNames = {
+				...queryOptions.attributeNames,
 				'#__createdAt': '__createdAt'
 			};
 
 			queryOptions.attributeValues = {
+				...queryOptions.attributeValues,
 				':from': args.from,
 				':to': args.to
 			};
+
+			queryOptions.queryExpression = concatConditionExpression(queryOptions.queryExpression!, '#__createdAt BETWEEN :from AND :to');
+		}
+
+		if (_.size(args.metadata)) {
+			let metadataFilter: string[] = [];
+
+			queryOptions.attributeNames = {
+				...queryOptions.attributeNames,
+				'#metadata': 'metadata'
+			};
+
+			_.forEach(args.metadata, (value, key) => {
+				queryOptions.attributeNames = {
+					...queryOptions.attributeNames,
+					[`#${key}`]: key
+				};
+
+				queryOptions.attributeValues = {
+					...queryOptions.attributeValues,
+					[`:${key}`]: value
+				};
+
+				metadataFilter = [...metadataFilter, `#metadata.#${key} = :${key}`];
+			});
+
+			queryOptions.filterExpression = concatConditionExpression(queryOptions.filterExpression!, metadataFilter.join(' AND '));
 		}
 
 		if (args.status) {
@@ -240,43 +271,8 @@ class Webhooks {
 				...queryOptions.attributeValues,
 				':status': args.status
 			};
-		}
 
-		if (args.id) {
-			if (args.from && args.to) {
-				queryOptions.filterExpression = '#__createdAt BETWEEN :from AND :to';
-			}
-
-			if (args.status) {
-				queryOptions.filterExpression = concatConditionExpression(queryOptions.filterExpression!, '#status = :status');
-			}
-
-			const res = await this.db.logs.query(queryOptions);
-
-			return {
-				...res,
-				items: _.map(res.items, logShape)
-			};
-		}
-
-		queryOptions = {
-			attributeNames: queryOptions.attributeNames,
-			attributeValues: queryOptions.attributeValues,
-			filterExpression: '',
-			index: 'namespace-createdAt',
-			item: { namespace: args.namespace },
-			limit: args.limit,
-			queryExpression: '',
-			scanIndexForward: args.desc ? false : true,
-			startKey: args.startKey
-		};
-
-		if (args.from && args.to) {
-			queryOptions.queryExpression = '#__createdAt BETWEEN :from AND :to';
-		}
-
-		if (args.status) {
-			queryOptions.filterExpression = '#status = :status';
+			queryOptions.filterExpression = concatConditionExpression(queryOptions.filterExpression!, '#status = :status');
 		}
 
 		const res = await this.db.logs.query(queryOptions);
@@ -321,6 +317,7 @@ class Webhooks {
 
 				const res = await this.putLog({
 					id: this.uuid(),
+					metadata: args.metadata,
 					namespace: args.namespace,
 					requestBody: args.requestBody || null,
 					requestHeaders: args.requestHeaders || null,

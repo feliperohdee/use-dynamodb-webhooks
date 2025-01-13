@@ -44,6 +44,13 @@ global.fetch = vi.fn(async (url, options) => {
 const createTestLog = (options?: Partial<Webhooks.Log>): Webhooks.Log => {
 	return logShape({
 		id: crypto.randomUUID(),
+		metadata: {
+			string: 'string',
+			number: 1,
+			boolean: true,
+			null: null,
+			undefined: undefined
+		},
 		namespace: 'spec',
 		requestBody: null,
 		requestHeaders: {},
@@ -236,6 +243,16 @@ describe('/index', () => {
 				// @ts-expect-error
 				const log = await webhooks.putLog(
 					createTestLog({
+						metadata:
+							i % 2 === 0
+								? {
+										string: 'string',
+										number: 1,
+										boolean: true,
+										null: null,
+										undefined: undefined
+									}
+								: {},
 						status: i % 2 === 0 ? 'SUCCESS' : 'FAIL'
 					})
 				);
@@ -257,13 +274,12 @@ describe('/index', () => {
 			});
 
 			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
-				attributeNames: {},
-				attributeValues: {},
+				attributeNames: { '#namespace': 'namespace' },
+				attributeValues: { ':namespace': 'spec' },
 				filterExpression: '',
 				index: 'namespace-createdAt',
-				item: { namespace: 'spec' },
 				limit: 100,
-				queryExpression: '',
+				queryExpression: '#namespace = :namespace',
 				scanIndexForward: true,
 				startKey: null
 			});
@@ -282,13 +298,12 @@ describe('/index', () => {
 			});
 
 			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
-				attributeNames: {},
-				attributeValues: {},
+				attributeNames: { '#namespace': 'namespace' },
+				attributeValues: { ':namespace': 'spec' },
 				filterExpression: '',
 				index: 'namespace-createdAt',
-				item: { namespace: 'spec' },
 				limit: 2,
-				queryExpression: '',
+				queryExpression: '#namespace = :namespace',
 				scanIndexForward: true,
 				startKey: null
 			});
@@ -306,13 +321,12 @@ describe('/index', () => {
 			});
 
 			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
-				attributeNames: {},
-				attributeValues: {},
+				attributeNames: { '#namespace': 'namespace' },
+				attributeValues: { ':namespace': 'spec' },
 				filterExpression: '',
 				index: 'namespace-createdAt',
-				item: { namespace: 'spec' },
 				limit: 2,
-				queryExpression: '',
+				queryExpression: '#namespace = :namespace',
 				scanIndexForward: true,
 				startKey: res.lastEvaluatedKey
 			});
@@ -331,13 +345,12 @@ describe('/index', () => {
 			});
 
 			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
-				attributeNames: {},
-				attributeValues: {},
+				attributeNames: { '#namespace': 'namespace' },
+				attributeValues: { ':namespace': 'spec' },
 				filterExpression: '',
 				index: 'namespace-createdAt',
-				item: { namespace: 'spec' },
 				limit: 100,
-				queryExpression: '',
+				queryExpression: '#namespace = :namespace',
 				scanIndexForward: false,
 				startKey: null
 			});
@@ -358,17 +371,18 @@ describe('/index', () => {
 
 			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
 				attributeNames: {
-					'#__createdAt': '__createdAt'
+					'#__createdAt': '__createdAt',
+					'#namespace': 'namespace'
 				},
 				attributeValues: {
 					':from': '2023-01-01T00:00:00Z',
+					':namespace': 'spec',
 					':to': '2023-01-02T00:00:00Z'
 				},
 				filterExpression: '',
 				index: 'namespace-createdAt',
-				item: { namespace: 'spec' },
 				limit: 100,
-				queryExpression: '#__createdAt BETWEEN :from AND :to',
+				queryExpression: '#namespace = :namespace AND #__createdAt BETWEEN :from AND :to',
 				scanIndexForward: true,
 				startKey: null
 			});
@@ -376,6 +390,56 @@ describe('/index', () => {
 			expect(res).toEqual({
 				count: 0,
 				items: [],
+				lastEvaluatedKey: null
+			});
+		});
+
+		it('should fetch by [namespace, metadata]', async () => {
+			const res = await webhooks.fetchLogs({
+				metadata: {
+					string: 'string',
+					number: 1,
+					boolean: true,
+					null: null,
+					undefined: undefined
+				},
+				namespace: 'spec'
+			});
+
+			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
+				attributeNames: {
+					'#boolean': 'boolean',
+					'#metadata': 'metadata',
+					'#namespace': 'namespace',
+					'#number': 'number',
+					'#null': 'null',
+					'#string': 'string'
+				},
+				attributeValues: {
+					':boolean': true,
+					':namespace': 'spec',
+					':number': 1,
+					':null': null,
+					':string': 'string'
+				},
+				filterExpression: [
+					'#metadata.#string = :string',
+					'#metadata.#number = :number',
+					'#metadata.#boolean = :boolean',
+					'#metadata.#null = :null'
+				].join(' AND '),
+				index: 'namespace-createdAt',
+				limit: 100,
+				queryExpression: '#namespace = :namespace',
+				scanIndexForward: true,
+				startKey: null
+			});
+
+			expect(res).toEqual({
+				count: 2,
+				items: _.filter(logs, log => {
+					return log.metadata.string === 'string';
+				}),
 				lastEvaluatedKey: null
 			});
 		});
@@ -388,16 +452,17 @@ describe('/index', () => {
 
 			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
 				attributeNames: {
+					'#namespace': 'namespace',
 					'#status': 'status'
 				},
 				attributeValues: {
+					':namespace': 'spec',
 					':status': 'SUCCESS'
 				},
 				filterExpression: '#status = :status',
 				index: 'namespace-createdAt',
-				item: { namespace: 'spec' },
 				limit: 100,
-				queryExpression: '',
+				queryExpression: '#namespace = :namespace',
 				scanIndexForward: true,
 				startKey: null
 			});
@@ -409,9 +474,16 @@ describe('/index', () => {
 			});
 		});
 
-		it('should fetch by [namespace, status, from, to]', async () => {
+		it('should fetch by [namespace, metadata, status, from, to]', async () => {
 			const res = await webhooks.fetchLogs({
 				from: '2023-01-01T00:00:00Z',
+				metadata: {
+					string: 'string',
+					number: 1,
+					boolean: true,
+					null: null,
+					undefined: undefined
+				},
 				namespace: 'spec',
 				status: 'SUCCESS',
 				to: '2023-01-02T00:00:00Z'
@@ -420,136 +492,34 @@ describe('/index', () => {
 			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
 				attributeNames: {
 					'#__createdAt': '__createdAt',
+					'#boolean': 'boolean',
+					'#metadata': 'metadata',
+					'#namespace': 'namespace',
+					'#number': 'number',
+					'#null': 'null',
+					'#string': 'string',
 					'#status': 'status'
 				},
 				attributeValues: {
+					':boolean': true,
 					':from': '2023-01-01T00:00:00Z',
+					':namespace': 'spec',
+					':number': 1,
+					':null': null,
 					':status': 'SUCCESS',
+					':string': 'string',
 					':to': '2023-01-02T00:00:00Z'
 				},
-				filterExpression: '#status = :status',
+				filterExpression: [
+					'#metadata.#string = :string',
+					'#metadata.#number = :number',
+					'#metadata.#boolean = :boolean',
+					'#metadata.#null = :null',
+					'#status = :status'
+				].join(' AND '),
 				index: 'namespace-createdAt',
-				item: { namespace: 'spec' },
 				limit: 100,
-				queryExpression: '#__createdAt BETWEEN :from AND :to',
-				scanIndexForward: true,
-				startKey: null
-			});
-
-			expect(res).toEqual({
-				count: 0,
-				items: [],
-				lastEvaluatedKey: null
-			});
-		});
-
-		it('should fetch by [namespace, id]', async () => {
-			const res = await webhooks.fetchLogs({
-				id: logs[0].id.slice(0, 8),
-				namespace: 'spec'
-			});
-
-			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
-				attributeNames: {},
-				attributeValues: {},
-				filterExpression: '',
-				item: { namespace: 'spec', id: logs[0].id.slice(0, 8) },
-				limit: 100,
-				prefix: true,
-				scanIndexForward: true,
-				startKey: null
-			});
-
-			expect(res).toEqual({
-				count: 1,
-				items: [logs[0]],
-				lastEvaluatedKey: null
-			});
-		});
-
-		it('should fetch by [namespace, id, from, to]', async () => {
-			const res = await webhooks.fetchLogs({
-				from: '2023-01-01T00:00:00Z',
-				id: logs[0].id.slice(0, 8),
-				namespace: 'spec',
-				to: '2023-01-02T00:00:00Z'
-			});
-
-			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
-				attributeNames: {
-					'#__createdAt': '__createdAt'
-				},
-				attributeValues: {
-					':from': '2023-01-01T00:00:00Z',
-					':to': '2023-01-02T00:00:00Z'
-				},
-				filterExpression: '#__createdAt BETWEEN :from AND :to',
-				item: { namespace: 'spec', id: logs[0].id.slice(0, 8) },
-				limit: 100,
-				prefix: true,
-				scanIndexForward: true,
-				startKey: null
-			});
-
-			expect(res).toEqual({
-				count: 0,
-				items: [],
-				lastEvaluatedKey: null
-			});
-		});
-
-		it('should fetch by [namespace, id, status]', async () => {
-			const res = await webhooks.fetchLogs({
-				id: logs[0].id.slice(0, 8),
-				namespace: 'spec',
-				status: 'SUCCESS'
-			});
-
-			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
-				attributeNames: {
-					'#status': 'status'
-				},
-				attributeValues: {
-					':status': 'SUCCESS'
-				},
-				filterExpression: '#status = :status',
-				item: { namespace: 'spec', id: logs[0].id.slice(0, 8) },
-				limit: 100,
-				prefix: true,
-				scanIndexForward: true,
-				startKey: null
-			});
-
-			expect(res).toEqual({
-				count: 1,
-				items: [logs[0]],
-				lastEvaluatedKey: null
-			});
-		});
-
-		it('should fetch by [namespace, id, status, from, to]', async () => {
-			const res = await webhooks.fetchLogs({
-				from: '2023-01-01T00:00:00Z',
-				id: logs[0].id.slice(0, 8),
-				namespace: 'spec',
-				status: 'SUCCESS',
-				to: '2023-01-02T00:00:00Z'
-			});
-
-			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
-				attributeNames: {
-					'#__createdAt': '__createdAt',
-					'#status': 'status'
-				},
-				attributeValues: {
-					':from': '2023-01-01T00:00:00Z',
-					':status': 'SUCCESS',
-					':to': '2023-01-02T00:00:00Z'
-				},
-				filterExpression: '#__createdAt BETWEEN :from AND :to AND #status = :status',
-				item: { namespace: 'spec', id: logs[0].id.slice(0, 8) },
-				limit: 100,
-				prefix: true,
+				queryExpression: '#namespace = :namespace AND #__createdAt BETWEEN :from AND :to',
 				scanIndexForward: true,
 				startKey: null
 			});
@@ -590,6 +560,7 @@ describe('/index', () => {
 				__createdAt: expect.any(String),
 				__updatedAt: expect.any(String),
 				id: '123',
+				metadata: {},
 				namespace: 'spec',
 				requestBody: null,
 				requestHeaders: {},
@@ -648,6 +619,13 @@ describe('/index', () => {
 
 		it('should trigger', async () => {
 			const res = await webhooks.trigger({
+				metadata: {
+					string: 'string',
+					number: 1,
+					boolean: true,
+					null: null,
+					undefined: undefined
+				},
 				namespace: 'spec',
 				requestBody: { test: true },
 				requestHeaders: {
@@ -668,6 +646,12 @@ describe('/index', () => {
 			// @ts-expect-error
 			expect(webhooks.putLog).toHaveBeenCalledWith({
 				id: expect.any(String),
+				metadata: {
+					string: 'string',
+					number: 1,
+					boolean: true,
+					null: null
+				},
 				namespace: 'spec',
 				requestBody: { test: true },
 				requestHeaders: { 'content-type': 'application/json' },
@@ -688,6 +672,12 @@ describe('/index', () => {
 				__createdAt: expect.any(String),
 				__updatedAt: expect.any(String),
 				id: expect.any(String),
+				metadata: {
+					string: 'string',
+					number: 1,
+					boolean: true,
+					null: null
+				},
 				namespace: 'spec',
 				requestBody: { test: true },
 				requestHeaders: { 'content-type': 'application/json' },
@@ -729,6 +719,7 @@ describe('/index', () => {
 				__createdAt: expect.any(String),
 				__updatedAt: expect.any(String),
 				id: expect.any(String),
+				metadata: {},
 				namespace: 'spec',
 				requestBody: { test: true },
 				requestHeaders: null,
@@ -776,6 +767,7 @@ describe('/index', () => {
 				__createdAt: expect.any(String),
 				__updatedAt: expect.any(String),
 				id: expect.any(String),
+				metadata: {},
 				namespace: 'spec',
 				requestBody: null,
 				requestHeaders: null,

@@ -14,6 +14,7 @@ A TypeScript library for executing webhooks with Amazon DynamoDB-based logging. 
 - 📂 **Namespace Organization**: Group webhooks by namespaces for better organization
 - 📊 **Monitoring & Logging**: Comprehensive logging system with query capabilities
 - ⏱️ **TTL Support**: Automatic cleanup of old webhook logs using DynamoDB TTL
+- 🏷️ **Metadata Support**: Add custom metadata to webhook logs for enhanced tracking and filtering
 
 ## Installation
 
@@ -43,7 +44,7 @@ const webhooks = new Webhooks({
 ### Trigger a Webhook
 
 ```typescript
-// GET request with query parameters
+// GET request with query parameters and metadata
 await webhooks.trigger({
 	namespace: 'users',
 	requestUrl: 'https://api.example.com/search',
@@ -52,11 +53,14 @@ await webhooks.trigger({
 		query: 'john',
 		status: 'active',
 		limit: 10
+	},
+	metadata: {
+		userId: '123',
+		source: 'search_api'
 	}
 });
-// Executes: GET https://api.example.com/search?query=john&status=active&limit=10
 
-// Basic POST webhook trigger
+// Basic POST webhook trigger with metadata
 await webhooks.trigger({
 	namespace: 'orders',
 	requestUrl: 'https://api.example.com/webhook',
@@ -67,6 +71,10 @@ await webhooks.trigger({
 	},
 	requestHeaders: {
 		Authorization: 'Bearer your-token'
+	},
+	metadata: {
+		orderId: '123',
+		processType: 'order_completion'
 	},
 	retryLimit: 3 // Optional: default is 3, max is 10
 });
@@ -106,19 +114,17 @@ const logs = await webhooks.fetchLogs({
 	namespace: 'orders'
 });
 
-// Fetch logs with filters
+// Fetch logs with filters and metadata
 const filteredLogs = await webhooks.fetchLogs({
 	namespace: 'orders',
 	status: 'SUCCESS',
 	from: '2024-01-01T00:00:00Z',
 	to: '2024-01-31T23:59:59Z',
+	metadata: {
+		orderId: '123',
+		processType: 'order_completion'
+	},
 	limit: 100
-});
-
-// Fetch logs for specific webhook ID
-const webhookLogs = await webhooks.fetchLogs({
-	namespace: 'orders',
-	id: 'webhook-123'
 });
 ```
 
@@ -132,17 +138,10 @@ type ConstructorOptions = {
 	secretAccessKey: string;
 	region: string;
 	tableName: string;
-	ttlInSeconds: number; // Default: 7776000 (90 days) - Must be configured in DynamoDB table settings
+	ttlInSeconds: number; // Default: 7776000 (90 days)
 	createTable?: boolean;
 };
 ```
-
-DynamoDB TTL Configuration:
-
-- The `ttlInSeconds` parameter specifies how long to keep webhook logs before automatic deletion
-- Default value is 90 days (7776000 seconds)
-- You must enable TTL in your DynamoDB table settings for automatic cleanup to work
-- The TTL attribute name is 'ttl'
 
 ### Trigger Options
 
@@ -153,7 +152,8 @@ type TriggerInput = {
 	requestMethod?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'HEAD';
 	requestBody?: Record<string, any>;
 	requestHeaders?: Record<string, string>;
-	retryLimit?: number; // Default: 3, Max: 1
+	metadata?: Record<string, any>;
+	retryLimit?: number; // Default: 3, Max: 10
 };
 ```
 
@@ -162,10 +162,10 @@ type TriggerInput = {
 ```typescript
 type FetchLogsInput = {
 	namespace: string;
-	id?: string;
 	status?: 'SUCCESS' | 'FAIL';
 	from?: string;
 	to?: string;
+	metadata?: Record<string, any>;
 	limit?: number;
 	desc?: boolean;
 	startKey?: Record<string, any>;
@@ -178,6 +178,7 @@ type FetchLogsInput = {
 type WebhookLog = {
 	id: string;
 	namespace: string;
+	metadata: Record<string, any>;
 	request: {
 		body: Record<string, any> | null;
 		headers: Record<string, string> | null;
@@ -227,6 +228,7 @@ The library automatically handles different content types:
 4. **TTL Configuration**: Set appropriate TTL values to manage log storage
 5. **Content Types**: Use appropriate content types based on webhook endpoint requirements
 6. **Security**: Always use HTTPS endpoints and secure authentication headers
+7. **Metadata Usage**: Add relevant metadata to facilitate tracking and filtering
 
 ## Development
 
