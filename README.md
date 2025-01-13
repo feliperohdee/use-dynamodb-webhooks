@@ -153,8 +153,7 @@ type TriggerInput = {
 	requestMethod?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'HEAD';
 	requestBody?: Record<string, any>;
 	requestHeaders?: Record<string, string>;
-	retryLimit?: number; // Default: 3, Max: 10
-	idPrefix?: string; // Useful for filtering logs by ID prefix
+	retryLimit?: number; // Default: 3, Max: 1
 };
 ```
 
@@ -164,7 +163,6 @@ type TriggerInput = {
 type FetchLogsInput = {
 	namespace: string;
 	id?: string;
-	idPrefix?: boolean; // Control whether ID matching uses prefix (default: true)
 	status?: 'SUCCESS' | 'FAIL';
 	from?: string;
 	to?: string;

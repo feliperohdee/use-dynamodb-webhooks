@@ -467,31 +467,6 @@ describe('/index', () => {
 			});
 		});
 
-		it('should fetch by [namespace, id] with idPrefix = false', async () => {
-			const res = await webhooks.fetchLogs({
-				id: logs[0].id.slice(0, 8),
-				idPrefix: false,
-				namespace: 'spec'
-			});
-
-			expect(webhooks.db.logs.query).toHaveBeenCalledWith({
-				attributeNames: {},
-				attributeValues: {},
-				filterExpression: '',
-				item: { namespace: 'spec', id: logs[0].id.slice(0, 8) },
-				limit: 100,
-				prefix: false,
-				scanIndexForward: true,
-				startKey: null
-			});
-
-			expect(res).toEqual({
-				count: 0,
-				items: [],
-				lastEvaluatedKey: null
-			});
-		});
-
 		it('should fetch by [namespace, id, from, to]', async () => {
 			const res = await webhooks.fetchLogs({
 				from: '2023-01-01T00:00:00Z',
@@ -823,12 +798,6 @@ describe('/index', () => {
 			// @ts-expect-error
 			const res = webhooks.uuid();
 			expect(res).toEqual(expect.any(String));
-		});
-
-		it('should generate a uuid with idPrefix', () => {
-			// @ts-expect-error
-			const res = webhooks.uuid('123');
-			expect(res).toMatch(/^123#.*$/);
 		});
 	});
 });

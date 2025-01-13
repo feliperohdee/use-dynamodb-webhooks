@@ -53,7 +53,6 @@ const fetchLogsInput = z.object({
 	desc: z.boolean().default(false),
 	from: z.string().datetime({ offset: true }).optional(),
 	id: z.string().optional(),
-	idPrefix: z.boolean().default(true),
 	limit: z.number().min(1).default(100),
 	namespace: z.string(),
 	startKey: z.record(z.any()).nullable().default(null),
@@ -62,7 +61,6 @@ const fetchLogsInput = z.object({
 });
 
 const triggerInput = z.object({
-	idPrefix: z.string().optional(),
 	namespace: z.string(),
 	requestBody: z.record(z.any()).nullable().optional(),
 	requestHeaders: z.record(z.string()).nullable().optional(),
@@ -216,7 +214,7 @@ class Webhooks {
 			filterExpression: '',
 			item: { namespace: args.namespace, id: args.id },
 			limit: args.limit,
-			prefix: args.idPrefix,
+			prefix: true,
 			scanIndexForward: args.desc ? false : true,
 			startKey: args.startKey
 		};
@@ -322,7 +320,7 @@ class Webhooks {
 				);
 
 				const res = await this.putLog({
-					id: this.uuid(args.idPrefix),
+					id: this.uuid(),
 					namespace: args.namespace,
 					requestBody: args.requestBody || null,
 					requestHeaders: args.requestHeaders || null,
@@ -353,7 +351,7 @@ class Webhooks {
 				return res;
 			} catch (err) {
 				return this.putLog({
-					id: this.uuid(args.idPrefix),
+					id: this.uuid(),
 					namespace: args.namespace,
 					requestBody: args.requestBody || null,
 					requestHeaders: args.requestHeaders || null,
@@ -380,8 +378,8 @@ class Webhooks {
 		}
 	}
 
-	private uuid(idPrefix?: string): string {
-		return _.compact([idPrefix, crypto.randomUUID()]).join('#');
+	private uuid(): string {
+		return crypto.randomUUID();
 	}
 }
 
