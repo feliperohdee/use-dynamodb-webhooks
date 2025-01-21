@@ -2,18 +2,18 @@
 	"name": "use-dynamodb-webhooks",
 	"dependencies": {
 		"lodash": "^4.17.21",
-		"use-dynamodb": "^1.0.57",
-		"use-http-error": "^1.0.1",
-		"use-qs": "^1.0.1",
+		"use-dynamodb": "^1.0.59",
+		"use-http-error": "^1.0.3",
+		"use-qs": "^1.0.4",
 		"zod": "^3.24.1",
-		"zod-default-instance": "^1.0.12"
+		"zod-default-instance": "^1.0.16"
 	},
 	"devDependencies": {
-		"@types/lodash": "^4.17.13",
-		"@types/node": "^22.10.2",
+		"@types/lodash": "^4.17.14",
+		"@types/node": "^22.10.7",
 		"@vitest/coverage-v8": "2.1.8",
 		"prettier": "^3.4.2",
-		"typescript": "^5.7.2",
+		"typescript": "^5.7.3",
 		"vitest": "^2.1.8"
 	},
 	"files": [
