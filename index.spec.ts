@@ -1,4 +1,4 @@
-import _, { method } from 'lodash';
+import _ from 'lodash';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import HttpError from 'use-http-error';
 import qs from 'use-qs';
