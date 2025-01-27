@@ -3,7 +3,7 @@ import Dynamodb, { concatConditionExpression } from 'use-dynamodb';
 import HttpError from 'use-http-error';
 import qs from 'use-qs';
 import z from 'zod';
-import zDefault from 'zod-default-instance';
+import zDefault from 'use-zod-default';
 
 const request = z.object({
 	body: z.record(z.any()).nullable(),
