@@ -6,7 +6,7 @@ import qs from 'use-qs';
 import Webhooks, { logShape } from './index';
 import { afterEach } from 'node:test';
 
-HttpError.includeStack = false;
+HttpError.setIncludeStack(false);
 
 // @ts-expect-error
 global.fetch = vi.fn(async (url, options) => {
@@ -603,15 +603,17 @@ describe('/index', () => {
 				// @ts-expect-error
 				expect(webhooks.putLog).not.toHaveBeenCalled();
 				expect((err as HttpError).toJson()).toEqual({
-					context: [
-						{
-							code: 'invalid_type',
-							expected: 'string',
-							received: 'undefined',
-							path: ['requestUrl'],
-							message: 'Required'
-						}
-					],
+					context: {
+						errors: [
+							{
+								code: 'invalid_type',
+								expected: 'string',
+								received: 'undefined',
+								path: ['requestUrl'],
+								message: 'Required'
+							}
+						]
+					},
 					message: 'Validation Error',
 					stack: [],
 					status: 400
@@ -755,7 +757,7 @@ describe('/index', () => {
 				requestHeaders: null,
 				requestMethod: 'GET',
 				requestUrl: 'https://invalid-url.com',
-				responseBody: '{"context":null,"message":"FAIL to fetch","stack":[],"status":500}',
+				responseBody: '{"context":{},"message":"FAIL to fetch","stack":[],"status":500}',
 				responseHeaders: {},
 				responseOk: false,
 				responseStatus: 500,
@@ -775,7 +777,7 @@ describe('/index', () => {
 				requestHeaders: null,
 				requestMethod: 'GET',
 				requestUrl: 'https://invalid-url.com',
-				responseBody: '{"context":null,"message":"FAIL to fetch","stack":[],"status":500}',
+				responseBody: '{"context":{},"message":"FAIL to fetch","stack":[],"status":500}',
 				responseHeaders: {},
 				responseOk: false,
 				responseStatus: 500,
@@ -810,7 +812,7 @@ describe('/index', () => {
 			const res4 = webhooks.uuid();
 
 			expect(res < res2).toBe(true);
-			expect(res2 < res3).toBe(true);;
+			expect(res2 < res3).toBe(true);
 			expect(res3 < res4).toBe(true);
 		});
 	});

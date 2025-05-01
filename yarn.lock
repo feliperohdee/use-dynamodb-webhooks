@@ -1809,20 +1809,20 @@ use-async-helpers@^1.0.21:
   resolved "https://registry.yarnpkg.com/use-async-helpers/-/use-async-helpers-1.0.24.tgz#349d9e9ee5a797fdb29f1c58df751af88df7cee4"
   integrity sha512-YkkqZg+S67lgqPVOkRo+RxB3rM8HiA13CPW6cwVGQ4uOBi80y2J5FvWxiV60wWDtLN53On9d4f1mMxJiUu9JPg==
 
-use-dynamodb@^1.0.59:
-  version "1.0.59"
-  resolved "https://registry.yarnpkg.com/use-dynamodb/-/use-dynamodb-1.0.59.tgz#39711ddf8cbc1e2406f7038747677860e890bd86"
-  integrity sha512-iwn7qyOsBWSks6KJLNbnLK0PwMO2rPPEI0j2CW9rf+qpqnrzn0+oikE+dvTQVzThcxYTRqrqSHn+1KnEiV8DXQ==
+use-dynamodb@^1.0.63:
+  version "1.0.63"
+  resolved "https://registry.yarnpkg.com/use-dynamodb/-/use-dynamodb-1.0.63.tgz#74a017758a7d1297033efa4dca7a959e4c369bae"
+  integrity sha512-zFQ/L493AmdjKEFMQJju+bGFLK6z9qo8mFFh/CiNSxghcYFd7bI7FHjRVHJa4JC7dyVvClRvrCkpY4xepXuRpQ==
   dependencies:
     "@aws-sdk/client-dynamodb" "^3.713.0"
     "@aws-sdk/lib-dynamodb" "^3.713.0"
     lodash "^4.17.21"
     use-async-helpers "^1.0.21"
 
-use-http-error@^1.0.3:
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/use-http-error/-/use-http-error-1.0.3.tgz#653a0682a5e06bce922f0fe9f1bf3c47cb8cfc98"
-  integrity sha512-FTsRogVIQjD45fPnjFwxejYJk+sRt586sqsFi+I102weNJKGOh4J9B7tURSF3vvY3RRHvX15oXvrvazW0eUdOA==
+use-http-error@^1.0.6:
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/use-http-error/-/use-http-error-1.0.6.tgz#5877e038ab0ae1fec417769b77b2e41031189406"
+  integrity sha512-uZf/uFhn1lLlZAyj3HZwjGCENZFPZYGJgkU0ABg7t/+vR8UEKcUDLy7Ws7erw3OT/iIZ26HVL7gszurJq0w3KA==
 
 use-qs@^1.0.4:
   version "1.0.4"
@@ -1831,10 +1831,10 @@ use-qs@^1.0.4:
   dependencies:
     lodash "^4.17.21"
 
-use-zod-default@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/use-zod-default/-/use-zod-default-1.0.1.tgz#9bc52f8856886d48fbe6bb31d21257c3e206c568"
-  integrity sha512-hzukYfF+3p8kFhEiXWCXoCyFrHgHZXESCMAz3lXV/6hxd7LnLODJj4s3EfewcgqP8SrJiEDUFM89a9KKJI3SjQ==
+use-zod-default@^1.0.10:
+  version "1.0.10"
+  resolved "https://registry.yarnpkg.com/use-zod-default/-/use-zod-default-1.0.10.tgz#5413dbd47628e64022266f71b69035cc18ab177b"
+  integrity sha512-LhSREceUKGVTtI21wfTko+8byHYTIc4eXdjyBfvCe28zW0efN1BXyS7ZxgWOI9vIsqZ93nihqyC4IyyeTN//kw==
   dependencies:
     zod "^3.23.8"
 

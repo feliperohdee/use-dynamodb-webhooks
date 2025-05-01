@@ -370,7 +370,9 @@ class Webhooks {
 		} catch (err) {
 			if (err instanceof z.ZodError) {
 				throw new HttpError(400, 'Validation Error', {
-					context: err.errors
+					context: {
+						errors: err.errors
+					}
 				});
 			}
 

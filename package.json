@@ -3,10 +3,10 @@
 	"dependencies": {
 		"lodash": "^4.17.21",
 		"ulid": "^3.0.0",
-		"use-dynamodb": "^1.0.59",
-		"use-http-error": "^1.0.3",
+		"use-dynamodb": "^1.0.63",
+		"use-http-error": "^1.0.6",
 		"use-qs": "^1.0.4",
-		"use-zod-default": "^1.0.1",
+		"use-zod-default": "^1.0.10",
 		"zod": "^3.24.1"
 	},
 	"devDependencies": {
@@ -34,5 +34,5 @@
 		"test": "./.test.sh",
 		"test:coverage": "rm -rf coverage && ./.test.sh --run --coverage"
 	},
-	"version": "1.0.22"
+	"version": "1.0.23"
 }
