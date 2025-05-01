@@ -1,4 +1,5 @@
 import _ from 'lodash';
+import { monotonicFactory } from 'ulid';
 import Dynamodb, { concatConditionExpression } from 'use-dynamodb';
 import HttpError from 'use-http-error';
 import qs from 'use-qs';
@@ -102,6 +103,8 @@ namespace Webhooks {
 const logShape = (input: Webhooks.LogInput): Webhooks.Log => {
 	return zDefault(log, input);
 };
+
+const ulid = monotonicFactory();
 
 class Webhooks {
 	public static schema = schema;
@@ -376,7 +379,7 @@ class Webhooks {
 	}
 
 	private uuid(): string {
-		return crypto.randomUUID();
+		return ulid();
 	}
 }
 

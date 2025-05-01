@@ -793,5 +793,25 @@ describe('/index', () => {
 			const res = webhooks.uuid();
 			expect(res).toEqual(expect.any(String));
 		});
+
+		it('should be lexicographically sortable', async () => {
+			// @ts-expect-error
+			const res = webhooks.uuid();
+			// @ts-expect-error
+			const res2 = webhooks.uuid();
+			// @ts-expect-error
+			const res3 = webhooks.uuid();
+
+			await new Promise(resolve => {
+				return setTimeout(resolve, 100);
+			});
+
+			// @ts-expect-error
+			const res4 = webhooks.uuid();
+
+			expect(res < res2).toBe(true);
+			expect(res2 < res3).toBe(true);;
+			expect(res3 < res4).toBe(true);
+		});
 	});
 });
