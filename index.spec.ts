@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ulid } from 'ulid';
 import HttpError from 'use-http-error';
 import qs from 'use-qs';
 
@@ -43,7 +44,7 @@ global.fetch = vi.fn(async (url, options) => {
 
 const createTestLog = (options?: Partial<Webhooks.Log>): Webhooks.Log => {
 	return logShape({
-		id: crypto.randomUUID(),
+		id: ulid(),
 		metadata: {
 			string: 'string',
 			number: 1,
