@@ -1,7 +1,8 @@
-.npmrc
 .DS_Store
-.vscode
+.npmrc
 .test.sh
+.vscode
 coverage
 dist
+dynamodb-local*
 node_modules

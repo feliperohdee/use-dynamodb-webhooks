@@ -1,11 +1,11 @@
 import _ from 'lodash';
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ulid } from 'ulid';
 import HttpError from 'use-http-error';
 import qs from 'use-qs';
 
+import { ENDPOINT } from './constants';
 import Webhooks, { logShape } from './index';
-import { afterEach } from 'node:test';
 
 HttpError.setIncludeStack(false);
 
@@ -76,6 +76,7 @@ describe('/index', () => {
 		webhooks = new Webhooks({
 			accessKeyId: process.env.AWS_ACCESS_KEY || '',
 			createTable: true,
+			endpoint: ENDPOINT,
 			region: process.env.AWS_REGION || '',
 			secretAccessKey: process.env.AWS_SECRET_KEY || '',
 			tableName: 'use-dynamodb-webhooks-spec',
@@ -87,6 +88,7 @@ describe('/index', () => {
 		webhooks = new Webhooks({
 			accessKeyId: process.env.AWS_ACCESS_KEY || '',
 			createTable: true,
+			endpoint: ENDPOINT,
 			region: process.env.AWS_REGION || '',
 			secretAccessKey: process.env.AWS_SECRET_KEY || '',
 			tableName: 'use-dynamodb-webhooks-spec',

@@ -85,6 +85,7 @@ namespace Webhooks {
 	export type ConstructorOptions = {
 		accessKeyId: string;
 		createTable?: boolean;
+		endpoint?: string;
 		region: string;
 		secretAccessKey: string;
 		tableName: string;
@@ -115,6 +116,7 @@ class Webhooks {
 	constructor(options: Webhooks.ConstructorOptions) {
 		const logs = new Dynamodb<Webhooks.Log>({
 			accessKeyId: options.accessKeyId,
+			endpoint: options.endpoint,
 			indexes: [
 				{
 					forceGlobal: true,
