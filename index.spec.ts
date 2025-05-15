@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ulid } from 'ulid';
+import { monotonicFactory } from 'ulid';
 import HttpError from 'use-http-error';
 import qs from 'use-qs';
 
@@ -42,16 +42,10 @@ global.fetch = vi.fn(async (url, options) => {
 	};
 });
 
-const createTestLog = (options?: Partial<Webhooks.Log>): Webhooks.Log => {
+const ulid = monotonicFactory();
+const createTestLog = (options?: Partial<Webhooks.Log>, idPrefix?: string): Webhooks.Log => {
 	return logShape({
-		id: ulid(),
-		metadata: {
-			string: 'string',
-			number: 1,
-			boolean: true,
-			null: null,
-			undefined: undefined
-		},
+		id: idPrefix ? `${idPrefix}${ulid()}` : ulid(),
 		namespace: 'spec',
 		requestBody: null,
 		requestHeaders: {},
@@ -261,6 +255,26 @@ describe('/index', () => {
 						status: i % 2 === 0 ? 'SUCCESS' : 'FAIL'
 					})
 				);
+
+				logs = [...logs, log];
+			}
+
+			for (let i = 0; i < 3; i++) {
+				// ensure logs are created in order
+				await new Promise(resolve => {
+					setTimeout(resolve, 10);
+				});
+
+				// @ts-expect-error
+				const log = await webhooks.putLog(
+					createTestLog(
+						{
+							status: i % 2 === 0 ? 'SUCCESS' : 'FAIL'
+						},
+						'prefix-'
+					)
+				);
+
 				logs = [...logs, log];
 			}
 		});
@@ -290,7 +304,7 @@ describe('/index', () => {
 			});
 
 			expect(res).toEqual({
-				count: 3,
+				count: 6,
 				items: logs,
 				lastEvaluatedKey: null
 			});
@@ -337,9 +351,9 @@ describe('/index', () => {
 			});
 
 			expect(res2).toEqual({
-				count: 1,
-				items: [logs[2]],
-				lastEvaluatedKey: null
+				count: 2,
+				items: [logs[2], logs[3]],
+				lastEvaluatedKey: _.pick(logs[3], ['__createdAt', 'id', 'namespace'])
 			});
 		});
 
@@ -361,7 +375,7 @@ describe('/index', () => {
 			});
 
 			expect(res).toEqual({
-				count: 3,
+				count: 6,
 				items: [...logs].reverse(),
 				lastEvaluatedKey: null
 			});
@@ -473,7 +487,7 @@ describe('/index', () => {
 			});
 
 			expect(res).toEqual({
-				count: 2,
+				count: 4,
 				items: _.filter(logs, { status: 'SUCCESS' }),
 				lastEvaluatedKey: null
 			});
@@ -533,6 +547,160 @@ describe('/index', () => {
 				count: 0,
 				items: [],
 				lastEvaluatedKey: null
+			});
+		});
+
+		describe('idPrefix', () => {
+			it('should fetch by [namespace]', async () => {
+				const res = await webhooks.fetchLogs({
+					idPrefix: 'prefix-',
+					namespace: 'spec'
+				});
+
+				expect(webhooks.db.logs.query).toHaveBeenCalledWith({
+					attributeNames: {
+						'#id': 'id',
+						'#namespace': 'namespace'
+					},
+					attributeValues: {
+						':idPrefix': 'prefix-',
+						':namespace': 'spec'
+					},
+					filterExpression: '',
+					limit: 100,
+					queryExpression: '#namespace = :namespace AND begins_with(#id, :idPrefix)',
+					scanIndexForward: true,
+					startKey: null
+				});
+
+				expect(res).toEqual({
+					count: 3,
+					items: _.filter(logs, log => {
+						return log.id.startsWith('prefix-');
+					}),
+					lastEvaluatedKey: null
+				});
+			});
+
+			it('should fetch by [namespace] desc', async () => {
+				const res = await webhooks.fetchLogs({
+					desc: true,
+					idPrefix: 'prefix-',
+					namespace: 'spec'
+				});
+
+				expect(webhooks.db.logs.query).toHaveBeenCalledWith({
+					attributeNames: {
+						'#id': 'id',
+						'#namespace': 'namespace'
+					},
+					attributeValues: {
+						':idPrefix': 'prefix-',
+						':namespace': 'spec'
+					},
+					filterExpression: '',
+					limit: 100,
+					queryExpression: '#namespace = :namespace AND begins_with(#id, :idPrefix)',
+					scanIndexForward: false,
+					startKey: null
+				});
+
+				expect(res).toEqual({
+					count: 3,
+					items: [...logs].slice(3, 6).reverse(),
+					lastEvaluatedKey: null
+				});
+			});
+
+			it('should fetch by [namespace] with limit, startKey', async () => {
+				const res = await webhooks.fetchLogs({
+					idPrefix: 'prefix-',
+					limit: 2,
+					namespace: 'spec'
+				});
+
+				expect(webhooks.db.logs.query).toHaveBeenCalledWith({
+					attributeNames: {
+						'#id': 'id',
+						'#namespace': 'namespace'
+					},
+					attributeValues: {
+						':idPrefix': 'prefix-',
+						':namespace': 'spec'
+					},
+					filterExpression: '',
+					limit: 2,
+					queryExpression: '#namespace = :namespace AND begins_with(#id, :idPrefix)',
+					scanIndexForward: true,
+					startKey: null
+				});
+
+				expect(res).toEqual({
+					count: 2,
+					items: logs.slice(3, 5),
+					lastEvaluatedKey: _.pick(logs[4], ['id', 'namespace'])
+				});
+
+				const res2 = await webhooks.fetchLogs({
+					idPrefix: 'prefix-',
+					limit: 2,
+					namespace: 'spec',
+					startKey: res.lastEvaluatedKey
+				});
+
+				expect(webhooks.db.logs.query).toHaveBeenCalledWith({
+					attributeNames: {
+						'#id': 'id',
+						'#namespace': 'namespace'
+					},
+					attributeValues: {
+						':idPrefix': 'prefix-',
+						':namespace': 'spec'
+					},
+					filterExpression: '',
+					limit: 2,
+					queryExpression: '#namespace = :namespace AND begins_with(#id, :idPrefix)',
+					scanIndexForward: true,
+					startKey: res.lastEvaluatedKey
+				});
+
+				expect(res2).toEqual({
+					count: 1,
+					items: [logs[5]],
+					lastEvaluatedKey: null
+				});
+			});
+
+			it('should fetch by [namespace, from, to]', async () => {
+				const res = await webhooks.fetchLogs({
+					from: '2023-01-01T00:00:00Z',
+					idPrefix: 'prefix-',
+					namespace: 'spec',
+					to: '2023-01-02T00:00:00Z'
+				});
+
+				expect(webhooks.db.logs.query).toHaveBeenCalledWith({
+					attributeNames: {
+						'#id': 'id',
+						'#namespace': 'namespace'
+					},
+					attributeValues: {
+						':from': 'prefix-01GNNA1J00\u0000',
+						':namespace': 'spec',
+						':to': 'prefix-01GNQWE900\uffff'
+					},
+					filterExpression: '',
+					limit: 100,
+					queryExpression: '#namespace = :namespace AND #id BETWEEN :from AND :to',
+					scanIndexForward: true,
+					startKey: null
+				});
+
+				expect(res).toEqual({
+					count: 0,
+					items: [],
+					lastEvaluatedKey: null
+				});
 			});
 		});
 	});

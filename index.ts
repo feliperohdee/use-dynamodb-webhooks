@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { monotonicFactory } from 'ulid';
+import { monotonicFactory, encodeTime } from 'ulid';
 import Dynamodb, { concatConditionExpression } from 'use-dynamodb';
 import HttpError from 'use-http-error';
 import qs from 'use-qs';
@@ -54,6 +54,7 @@ const log = z.object({
 const fetchLogsInput = z.object({
 	desc: z.boolean().default(false),
 	from: z.string().datetime({ offset: true }).optional(),
+	idPrefix: z.string().optional(),
 	limit: z.number().min(1).default(100),
 	metadata: z.record(z.any()).default({}),
 	namespace: z.string(),
@@ -220,26 +221,60 @@ class Webhooks {
 			attributeNames: { '#namespace': 'namespace' },
 			attributeValues: { ':namespace': args.namespace },
 			filterExpression: '',
-			index: 'namespace-createdAt',
 			limit: args.limit,
 			queryExpression: '#namespace = :namespace',
 			scanIndexForward: args.desc ? false : true,
 			startKey: args.startKey
 		};
 
-		if (args.from && args.to) {
-			queryOptions.attributeNames = {
-				...queryOptions.attributeNames,
-				'#__createdAt': '__createdAt'
+		if (args.idPrefix) {
+			queryOptions = {
+				...queryOptions,
+				attributeNames: {
+					...queryOptions.attributeNames,
+					'#id': 'id'
+				},
+				attributeValues: {
+					...queryOptions.attributeValues,
+					':idPrefix': args.idPrefix
+				},
+				queryExpression: '#namespace = :namespace AND begins_with(#id, :idPrefix)'
 			};
 
-			queryOptions.attributeValues = {
-				...queryOptions.attributeValues,
-				':from': args.from,
-				':to': args.to
-			};
+			if (args.from && args.to) {
+				const from = new Date(args.from);
+				const to = new Date(args.to);
 
-			queryOptions.queryExpression = concatConditionExpression(queryOptions.queryExpression!, '#__createdAt BETWEEN :from AND :to');
+				queryOptions.attributeNames = {
+					'#id': 'id',
+					'#namespace': 'namespace'
+				};
+
+				queryOptions.attributeValues = {
+					':from': `${args.idPrefix}${encodeTime(from.getTime())}\u0000`,
+					':namespace': args.namespace,
+					':to': `${args.idPrefix}${encodeTime(to.getTime())}\uffff`
+				};
+
+				queryOptions.queryExpression = '#namespace = :namespace AND #id BETWEEN :from AND :to';
+			}
+		} else {
+			queryOptions.index = 'namespace-createdAt';
+
+			if (args.from && args.to) {
+				queryOptions.attributeNames = {
+					'#namespace': 'namespace',
+					'#__createdAt': '__createdAt'
+				};
+
+				queryOptions.attributeValues = {
+					':from': args.from,
+					':namespace': args.namespace,
+					':to': args.to
+				};
+
+				queryOptions.queryExpression = '#namespace = :namespace AND #__createdAt BETWEEN :from AND :to';
+			}
 		}
 
 		if (_.size(args.metadata)) {
