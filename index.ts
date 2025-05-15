@@ -63,6 +63,7 @@ const fetchLogsInput = z.object({
 });
 
 const triggerInput = z.object({
+	logPrefix: z.string().optional(),
 	metadata: z.record(z.any()).default({}),
 	namespace: z.string(),
 	requestBody: z.record(z.any()).nullable().optional(),
@@ -321,7 +322,7 @@ class Webhooks {
 				);
 
 				const res = await this.putLog({
-					id: this.uuid(),
+					id: this.uuid(args.logPrefix),
 					metadata: args.metadata,
 					namespace: args.namespace,
 					requestBody: args.requestBody || null,
@@ -353,7 +354,7 @@ class Webhooks {
 				return res;
 			} catch (err) {
 				return this.putLog({
-					id: this.uuid(),
+					id: this.uuid(args.logPrefix),
 					namespace: args.namespace,
 					requestBody: args.requestBody || null,
 					requestHeaders: args.requestHeaders || null,
@@ -382,8 +383,8 @@ class Webhooks {
 		}
 	}
 
-	private uuid(): string {
-		return ulid();
+	private uuid(prefix?: string): string {
+		return prefix ? `${prefix}${ulid()}` : ulid();
 	}
 }
 

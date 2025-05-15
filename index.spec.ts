@@ -702,6 +702,85 @@ describe('/index', () => {
 			});
 		});
 
+		it('should trigger with logPrefix', async () => {
+			const res = await webhooks.trigger({
+				logPrefix: 'test-',
+				metadata: {
+					string: 'string',
+					number: 1,
+					boolean: true,
+					null: null,
+					undefined: undefined
+				},
+				namespace: 'spec',
+				requestBody: { test: true },
+				requestHeaders: {
+					'content-type': 'application/json'
+				},
+				requestMethod: 'POST',
+				requestUrl: 'https://httpbin.org/anything'
+			});
+
+			expect(global.fetch).toHaveBeenCalledWith('https://httpbin.org/anything', {
+				body: JSON.stringify({ test: true }),
+				headers: new Headers({
+					'content-type': 'application/json'
+				}),
+				method: 'POST'
+			});
+
+			// @ts-expect-error
+			expect(webhooks.putLog).toHaveBeenCalledWith({
+				id: expect.stringMatching(/^test-.*$/),
+				metadata: {
+					string: 'string',
+					number: 1,
+					boolean: true,
+					null: null
+				},
+				namespace: 'spec',
+				requestBody: { test: true },
+				requestHeaders: { 'content-type': 'application/json' },
+				requestMethod: 'POST',
+				requestUrl: 'https://httpbin.org/anything',
+				responseBody:
+					'{"success":true,"url":"https://httpbin.org/anything","options":{"body":"{\\"test\\":true}","method":"POST","headers":{}}}',
+				responseHeaders: { 'content-type': 'application/json' },
+				responseOk: true,
+				responseStatus: 200,
+				retryCount: 0,
+				retryLimit: 3,
+				status: 'SUCCESS',
+				ttl: expect.any(Number)
+			});
+
+			expect(res).toEqual({
+				__createdAt: expect.any(String),
+				__updatedAt: expect.any(String),
+				id: expect.stringMatching(/^test-.*$/),
+				metadata: {
+					string: 'string',
+					number: 1,
+					boolean: true,
+					null: null
+				},
+				namespace: 'spec',
+				requestBody: { test: true },
+				requestHeaders: { 'content-type': 'application/json' },
+				requestMethod: 'POST',
+				requestUrl: 'https://httpbin.org/anything',
+				responseBody:
+					'{"success":true,"url":"https://httpbin.org/anything","options":{"body":"{\\"test\\":true}","method":"POST","headers":{}}}',
+				responseHeaders: { 'content-type': 'application/json' },
+				responseOk: true,
+				responseStatus: 200,
+				retryCount: 0,
+				retryLimit: 3,
+				status: 'SUCCESS',
+				ttl: expect.any(Number)
+			});
+		});
+
 		it('should retry', async () => {
 			vi.spyOn(global, 'fetch').mockImplementation(async () => {
 				return Response.json(
