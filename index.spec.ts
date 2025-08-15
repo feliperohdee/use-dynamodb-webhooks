@@ -779,9 +779,8 @@ describe('/index', () => {
 							{
 								code: 'invalid_type',
 								expected: 'string',
-								received: 'undefined',
-								path: ['requestUrl'],
-								message: 'Required'
+								message: 'Invalid input: expected string, received undefined',
+								path: ['requestUrl']
 							}
 						]
 					},

@@ -7,35 +7,29 @@ import z from 'zod';
 import zDefault from 'use-zod-default';
 
 const request = z.object({
-	body: z.record(z.any()).nullable(),
-	headers: z.record(z.string()).nullable(),
+	body: z.record(z.string(), z.any()).nullable(),
+	headers: z.record(z.string(), z.string()).nullable(),
 	method: z.enum(['DELETE', 'GET', 'HEAD', 'POST', 'PUT']),
 	url: z.string().url()
 });
 
 const response = z.object({
 	body: z.string(),
-	headers: z.record(z.string()),
+	headers: z.record(z.string(), z.string()),
 	ok: z.boolean(),
 	status: z.number()
 });
 
 const logStatus = z.enum(['FAIL', 'SUCCESS']);
 const log = z.object({
-	__createdAt: z
-		.string()
-		.datetime()
-		.default(() => {
-			return new Date().toISOString();
-		}),
-	__updatedAt: z
-		.string()
-		.datetime()
-		.default(() => {
-			return new Date().toISOString();
-		}),
+	__createdAt: z.iso.datetime().default(() => {
+		return new Date().toISOString();
+	}),
+	__updatedAt: z.iso.datetime().default(() => {
+		return new Date().toISOString();
+	}),
 	id: z.string(),
-	metadata: z.record(z.any()).default({}),
+	metadata: z.record(z.string(), z.any()).default({}),
 	namespace: z.string(),
 	requestBody: request.shape.body,
 	requestHeaders: request.shape.headers,
@@ -56,19 +50,19 @@ const fetchLogsInput = z.object({
 	from: z.string().datetime({ offset: true }).optional(),
 	idPrefix: z.string().optional(),
 	limit: z.number().min(1).default(100),
-	metadata: z.record(z.any()).default({}),
+	metadata: z.record(z.string(), z.any()).default({}),
 	namespace: z.string(),
-	startKey: z.record(z.any()).nullable().default(null),
+	startKey: z.record(z.string(), z.any()).nullable().default(null),
 	status: logStatus.nullable().optional(),
 	to: z.string().datetime({ offset: true }).optional()
 });
 
 const triggerInput = z.object({
 	logPrefix: z.string().optional(),
-	metadata: z.record(z.any()).default({}),
+	metadata: z.record(z.string(), z.any()).default({}),
 	namespace: z.string(),
-	requestBody: z.record(z.any()).nullable().optional(),
-	requestHeaders: z.record(z.string()).nullable().optional(),
+	requestBody: z.record(z.string(), z.any()).nullable().optional(),
+	requestHeaders: z.record(z.string(), z.string()).nullable().optional(),
 	requestMethod: request.shape.method.default('GET'),
 	requestUrl: request.shape.url,
 	retryLimit: z.number().min(0).max(10).default(3)
@@ -286,6 +280,10 @@ class Webhooks {
 			};
 
 			_.forEach(args.metadata, (value, key) => {
+				if (_.isUndefined(value)) {
+					return;
+				}
+
 				queryOptions.attributeNames = {
 					...queryOptions.attributeNames,
 					[`#${key}`]: key
@@ -409,7 +407,7 @@ class Webhooks {
 			if (err instanceof z.ZodError) {
 				throw new HttpError(400, 'Validation Error', {
 					context: {
-						errors: err.errors
+						errors: err.issues
 					}
 				});
 			}
