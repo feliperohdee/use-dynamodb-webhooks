@@ -16,7 +16,7 @@
 		"use-dynamodb": "^1.0.72",
 		"use-http-error": "^1.0.6",
 		"use-qs": "^1.0.5",
-		"use-zod-default": "^1.0.20",
+		"use-zod-default": "^1.0.21",
 		"vitest": "^3.2.4",
 		"zod": "^4.0.17"
 	},
@@ -29,7 +29,7 @@
 		"use-dynamodb": "^1.0.72",
 		"use-http-error": "^1.0.6",
 		"use-qs": "^1.0.5",
-		"use-zod-default": "^1.0.20",
+		"use-zod-default": "^1.0.21",
 		"zod": "^4.0.17"
 	},
 	"files": [
@@ -50,5 +50,5 @@
 		"test:coverage": "rm -rf coverage && yarn vitest --fileParallelism=false --run --coverage",
 		"test:watch": "yarn vitest --fileParallelism=false"
 	},
-	"version": "1.0.39"
+	"version": "1.0.40"
 }
