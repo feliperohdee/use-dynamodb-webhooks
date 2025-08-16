@@ -68,11 +68,11 @@ describe('/index', () => {
 
 	beforeAll(() => {
 		webhooks = new Webhooks({
-			accessKeyId: process.env.AWS_ACCESS_KEY || '',
+			accessKeyId: 'test',
 			createTable: true,
 			endpoint: ENDPOINT,
-			region: process.env.AWS_REGION || '',
-			secretAccessKey: process.env.AWS_SECRET_KEY || '',
+			region: 'us-east-1',
+			secretAccessKey: 'test',
 			tableName: 'use-dynamodb-webhooks-spec',
 			ttlInSeconds: 3600
 		});
@@ -80,11 +80,11 @@ describe('/index', () => {
 
 	beforeEach(() => {
 		webhooks = new Webhooks({
-			accessKeyId: process.env.AWS_ACCESS_KEY || '',
+			accessKeyId: 'test',
 			createTable: true,
 			endpoint: ENDPOINT,
-			region: process.env.AWS_REGION || '',
-			secretAccessKey: process.env.AWS_SECRET_KEY || '',
+			region: 'us-east-1',
+			secretAccessKey: 'test',
 			tableName: 'use-dynamodb-webhooks-spec',
 			ttlInSeconds: 3600
 		});
