@@ -331,15 +331,14 @@ class Webhooks {
 	async trigger(input: Webhooks.TriggerInput, retries: number = 0): Promise<Webhooks.Log> {
 		try {
 			const args = await triggerInput.parseAsync(input);
+			const { body, headers, method, url } = this.createFetchRequest({
+				body: args.requestBody || null,
+				headers: args.requestHeaders || null,
+				method: args.requestMethod || 'GET',
+				url: args.requestUrl
+			});
 
 			try {
-				const { body, headers, method, url } = this.createFetchRequest({
-					body: args.requestBody || null,
-					headers: args.requestHeaders || null,
-					method: args.requestMethod || 'GET',
-					url: args.requestUrl
-				});
-
 				const response = await fetch(
 					url,
 					body && (method === 'POST' || method === 'PUT')
@@ -359,7 +358,7 @@ class Webhooks {
 					metadata: args.metadata,
 					namespace: args.namespace,
 					requestBody: args.requestBody || null,
-					requestHeaders: args.requestHeaders || null,
+					requestHeaders: Object.fromEntries(headers.entries()),
 					requestMethod: method,
 					requestUrl: url,
 					responseBody: await response.text(),
@@ -390,7 +389,7 @@ class Webhooks {
 					id: this.uuid(args.logPrefix),
 					namespace: args.namespace,
 					requestBody: args.requestBody || null,
-					requestHeaders: args.requestHeaders || null,
+					requestHeaders: Object.fromEntries(headers.entries()),
 					requestMethod: args.requestMethod || 'GET',
 					requestUrl: args.requestUrl,
 					responseBody: JSON.stringify(HttpError.wrap(err as Error).toJson()),
